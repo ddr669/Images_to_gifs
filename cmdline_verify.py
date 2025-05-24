@@ -37,9 +37,9 @@ def return_file_() -> dict:
           "path": None,
           "out_path": None}        #   caminho dos arquivos
     # ⬊ ☞
-    _["path"] = input("Path to find files ☞")
-    _["size"] = input("how much images ☞")
-    _["out_path"] = input("archive to save ☞")
+    _["path"] = input("Path to find files ☞\t")
+    _["size"] = input("how much images ☞\t")
+    _["out_path"] = input("archive to save ☞\t")
     return _ 
 
 
