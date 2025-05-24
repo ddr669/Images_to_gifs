@@ -9,19 +9,30 @@ from sys import argv
 from cmdline_verify import cmdline_verify
 from cmdline_verify import __help__, return_file_
 
-def read_dir_(path: str):
+def read_dir_(path: str, ext: str = None):
     # to make the things izi, if you named the pics files with * img_0001.jpg * 
     # ( Optional : if you dont choose extension, will be necessary!)
-    try:
-        file = open(path, "r")
-    except FileNotFoundError as Err:
-        __help__()
-        print("[!] path or file not Found!")
-        exit()
+    if ext:
+        print("search for files with extension: ", ext)
+        
+    else:   
+        try:
+            file = open(path, "r")
+        except FileNotFoundError as Err:
+            __help__()
+            print("[!] path or file not Found!")
+            exit()
     
 
 def main(file_dict: dict):
+    if file_dict == "!":
+        __help__()
+        exit(1)
+        
     print(file_dict)
+    if file_dict["extension"]:
+        read_dir_(_file_["path"], ext=file_dict["extension"])
+
     read_dir_(_file_["path"])
     return 0
 
@@ -33,5 +44,5 @@ if __name__ == "__main__":
     except IndexError as Err:
         _file_ = return_file_()
 
-    app = main(_file_) if _file_ else main("!")
-    input()
+    app = main(_file_) if _file_["path"] else main("!")
+    
