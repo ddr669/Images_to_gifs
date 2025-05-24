@@ -8,6 +8,6 @@ some extensions the scripts will read only images with that extension.
 the ideia is make the things more fast, too soon is comming a GUI.
 
 ### background_remove scheme
-> L-channel: brightness
-> A-channel: variation between red and green
-> B-channel: variation between yellow and blue
+> L-channel: brightness.<br>
+> A-channel: variation between red and green.<br>
+> B-channel: variation between yellow and blue.<br>
