@@ -9,8 +9,20 @@ from sys import argv
 from cmdline_verify import cmdline_verify
 from cmdline_verify import __help__, return_file_
 
+def read_dir_(path: str):
+    # to make the things izi, if you named the pics files with * img_0001.jpg * 
+    # ( Optional : if you dont choose extension, will be necessary!)
+    try:
+        file = open(path, "r")
+    except FileNotFoundError as Err:
+        __help__()
+        print("[!] path or file not Found!")
+        exit()
+    
+
 def main(file_dict: dict):
     print(file_dict)
+    read_dir_(_file_["path"])
     return 0
 
 if __name__ == "__main__":
