@@ -7,6 +7,10 @@ Just some functions to make the options more easy and clearly like framerate, ex
 some extensions the scripts will read only images with that extension.
 the ideia is make the things more fast, too soon is comming a GUI.
 
+## find_files_byPATH
+If you use -e --ext --extension the script read all the files with that extension.
+if you dont, rename the frames files with img_0001.jpg|png... in order.
+
 ### background_remove scheme
 > L-channel: brightness.<br>
 > A-channel: variation between red and green.<br>
