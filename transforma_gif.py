@@ -62,31 +62,35 @@ def make_image_from_fonts(file, _font: str = "lucidaconsole",
     # LEMBRAR hsv para verificar funciona ao contrario do rgb 
     #                               rgb = rgb 
     #                               hsv = b, g, r
+    # Todo [ recv color select and calc the lower and target ]
     lower_target = np.array([20, 32, 170])
     target = np.array([50, 54, 226])
-    
-  
+    ########################
     for a in range(1, size[1], 4):
         for x in range(1, size[0], 5):
+                # r, g, b unpack to pixel in [x][a]
                 r,g,b = IMG_CRU_RGB[x][a]
-                #print(r,g,b)
                 if r in range(lower_target[0], target[0]) and g in range(lower_target[1], target[1]) and b in range(lower_target[2],target[2]):
+                    # if pixel have the color on range of lower to target draw text
                     arraysurf.blit(texto, (x,a))
+    # rotate
     IMG_CRU_RGB = IMG_CRU_RGB.transpose([1, 0, 2])
+    # variable temp to save array3d of surface 
     _tmp = surfarray.array3d(arraysurf)
     imagem_com_texto = cv2.cvtColor(_tmp, cv2.COLOR_BGR2RGB)
     imagem_com_texto = imagem_com_texto.transpose([1, 0, 2])
-
+    # save the surface and img with text in the color selected 
     cv2.imshow("image_cru", IMG_CRU_RGB)
-
+    # show the normal image 
     view = imagem_com_texto
+    # show the result of sum by two surface 
     cv2.imshow("view_pygame",view)
-
+    # wait for a key 
     cv2.waitKey(0)
     #cv2.imwrite(_to if _to else "out.jpg", img_bgr)
     ############## test End ##################
     return 1
-    #####################################
+    #####################################   
 def read_dir_(path: str, ext: str = None):
     # to make the things izi, if you named the pics files with * img_0001.jpg * 
     # ( Optional : if you dont choose extension, will be necessary!)
