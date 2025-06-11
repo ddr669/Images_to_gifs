@@ -80,14 +80,15 @@ def make_image_from_fonts(file,
         for x in range(1, size[0],6):
                 # r, g, b unpack to pixel in [x][a]
                 r,g,b = IMG_CRU_RGB[x][a]
-                
+                # if pixel have the color on range of lower to target draw text
                 if r in range(lower_target[0], target[0]) and g in range(lower_target[1], target[1]) and b in range(lower_target[2],target[2]):
-                    # if pixel have the color on range of lower to target draw text
+                    
+                    ####### circulos para sobrescrever cor ######## 
                     if _remove_:
                         draw.circle(arraysurf,_new_color, (
                                     x,a
                                 ), 4, 0) #IMG_CRU_RGB[x][a] 
-                    ####### circulos para sobrescrever cor ########    
+                       
                     arraysurf.blit(texto, (x,a))
 
                 _text = f"{chars_[randint(0, 1)]}"#{chars_[randint(0, 1)]}"
