@@ -31,26 +31,29 @@ def __help__(_baner_: bool = True):
 # ‾ ⁄ ▰ ▒ ░
 def return_file_() -> dict:
     _ = { "extension": None,    #   extenção do arquivo
-          "out_ext": ".gif",    #   extenção da saida
-          "framerate": 8,       #   framerate da saida
+          "out_ext": "gif",    #   extenção da saida
+          "framerate": 12,       #   framerate da saida
           "size": 2,            #   quantidade de arquivos
-          "path": None,
-          "out_path": None}        #   caminho dos arquivos
+          "path": "src/",
+          "out_path": None,
+          "GUI": True}        #   caminho dos arquivos
     # ⬊ ☞
-    _["path"] = input("Path to find files ☞\t")
-    _["size"] = input("how much images ☞\t")
-    _["out_path"] = input("archive to save ☞\t")
+    _["path"] = input("Path to find files/or file.mp4 ☞\t")
+    print(_["path"][:-3]) 
+    #_["size"] = input("how much images ☞\t")
+    #_["out_path"] = input("archive to save ☞\t")
     return _ 
 
 
 def cmdline_verify(array: list) -> dict:
     counter = 0
     _ = { "extension": None,    #   extenção do arquivo
-          "out_ext": ".gif",    #   extenção da saida
-          "framerate": 8,       #   framerate da saida
+          "out_ext": "gif",    #   extenção da saida
+          "framerate": 12,       #   framerate da saida
           "size": 2,            #   quantidade de arquivos
-          "path": None,
-          "out_path": None}        #   caminho dos arquivos
+          "path": "src/",
+          "out_path": "out/",
+          "GUI": True}       #   caminho dos arquivos
     for ITEM in array:
         match ITEM:
             case "-avi" | "-AVI":
@@ -83,6 +86,11 @@ def cmdline_verify(array: list) -> dict:
                     _["out_path"] = array[counter + 1]
                 except IndexError as Err:
                     return -1
+            case "-g" | "--gui" | "--GUI":
+                try:
+                    _["GUI"] = array[counter + 1]
+                except IndexError as Err:
+                    return -1    
                 
         if counter < len(array):
             counter += 1
