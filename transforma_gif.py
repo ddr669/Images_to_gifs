@@ -72,8 +72,17 @@ def make_image_from_fonts(file,
     #                               rgb = rgb 
     #                               hsv = b, g, r
     # Todo [ recv color select and calc the lower and target ]
-    lower_target = np.array([20, 32, 170])
-    target = np.array([50, 54, 226])
+
+    ########################### teste 
+    lower_target = np.array([145, 130, 125]) # pra pegar o fundo do gato 
+    target = np.array([252, 239, 226]) # pra pegar o fundo do gato
+    # fazer a integracao NOW 
+
+
+    #lower_target = np.array([20, 32, 170]) # vermelho
+    #target = np.array([50, 54, 226]) # vermelho
+
+
     chars_ = ["x", ";"] # ░
     ########################
     for a in range(1, size[1], 8):
@@ -141,7 +150,20 @@ def read_dir_(path: str, ext: str = None):
         
 def save_as_video_():
     pass
-
+def save_as_gif(path: str = "src",
+                out: str = "gato_gif02.gif",
+                file: str = "out_"):
+    files = os_path(path)
+    frames = [Image.open(path+"/"+n) for n in files]
+    frame0 = frames[0]
+    frame0.save(f"out/{out}", save_all=True, append_images=frames, duration=120, loop=0)
+    
+def floppy_images(path: str = "src",
+                  count: int = 60,
+                  file: str = "out_0.jpg"):
+    for n in range(0, count):
+        _new_file = f"{path}/out_{n}.jpg"
+        make_image_from_fonts(file, _to=_new_file)
 
 def main(file_dict: dict):
     
@@ -159,15 +181,15 @@ def main(file_dict: dict):
     return 0
     # END
 if __name__ == "__main__":
-
-
+    floppy_images()
+    save_as_gif()
     #cv2_fourcc = cv2.VideoWriter_fourcc(*"mp4v")
     
     
     # faz varias imagens com ascii random
     #for n in range(0, 120):
     #    _new_file = f"src/out_{n}.jpg"
-    make_image_from_fonts("image_vermei.JPG", _to="testes000.jpg") #, _to="bionario.jpg")
+    #make_image_from_fonts("image_vermei.JPG", _to="testes000.jpg") #, _to="bionario.jpg")
     #for file in os_path("src"):
     #_ = os_path("src")
     
