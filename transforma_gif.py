@@ -42,7 +42,18 @@ def make_image_from_fonts(file,
                         _color_: tuple = (20,20,20),
                         _remove_: bool = False,
                         _new_color: tuple = (0,0,0)) :
-    ############# TEste ###################
+    """
+        file - file to edit
+        _font - font-family 
+        _size - font-size
+        _to - !
+        size - !
+        _text - if a _text will type the text a lot of times
+        _color_ - !
+        _remore_ - to overwrite the color range to _color_
+
+    """
+    
     sprite_group = Group()
     _img = Sprites_(_file=file)
     sprite_group.add(_img)
@@ -56,7 +67,7 @@ def make_image_from_fonts(file,
     texto = font_pygame.render(_text, True, _color_)
     arraysurf.fill((0,0,0,0))
     
-        # FINALY!
+        
     
     sprite_group.draw(arraysurf)
     _tmp = surfarray.array3d(arraysurf)
@@ -65,7 +76,7 @@ def make_image_from_fonts(file,
     #IMG_CRU_RGB = IMG_CRU_RGB.transpose([1, 0, 2])
     _tmp = cv2.imread(file)
     
-    #_tmp = cv2.cvtColor(_tmp, cv2.COLOR_BGR2RGB)
+    
     hsv_img = cv2.cvtColor(_tmp, cv2.COLOR_BGR2HSV)
     hsv_img = hsv_img.transpose([1, 0 ,2])
     # LEMBRAR hsv para verificar funciona ao contrario do rgb 
@@ -73,34 +84,31 @@ def make_image_from_fonts(file,
     #                               hsv = b, g, r
     # Todo [ recv color select and calc the lower and target ]
 
-    ########################### teste 
-    lower_target = np.array([145, 130, 125]) # pra pegar o fundo do gato 
-    target = np.array([252, 239, 226]) # pra pegar o fundo do gato
-    # fazer a integracao NOW 
+     
+    lower_target = np.array([145, 130, 125]) # pra pegar o fundo do gato # grey 
+    target = np.array([252, 239, 226]) # pra pegar o fundo do gato  # white
 
+    #lower_target = np.array([20, 32, 170]) # vermelho # red
+    #target = np.array([50, 54, 226]) # vermelho    # red
 
-    #lower_target = np.array([20, 32, 170]) # vermelho
-    #target = np.array([50, 54, 226]) # vermelho
+    chars_ = ["0", "1"] # ░
+    # todo: 
+    #   algorithm to separate 1/4 of frame and multithread to process it
+    #
 
-
-    chars_ = ["x", ";"] # ░
-    ########################
     for a in range(1, size[1], 8):
         for x in range(1, size[0],6):
-                # r, g, b unpack to pixel in [x][a]
                 r,g,b = IMG_CRU_RGB[x][a]
                 # if pixel have the color on range of lower to target draw text
                 if r in range(lower_target[0], target[0]) and g in range(lower_target[1], target[1]) and b in range(lower_target[2],target[2]):
-                    
-                    ####### circulos para sobrescrever cor ######## 
+                    # circulos para sobrescrever cor - circle to overwrite the background color range
                     if _remove_:
-                        draw.circle(arraysurf,_new_color, (
-                                    x,a
-                                ), 4, 0) #IMG_CRU_RGB[x][a] 
-                       
-                    arraysurf.blit(texto, (x,a))
+                        draw.circle(arraysurf,_new_color, (x,a), 4, 0) 
 
-                _text = f"{chars_[randint(0, 1)]}"#{chars_[randint(0, 1)]}"
+                    arraysurf.blit(texto, (x,a))
+                # todo: a way to indentify the size of _text_ 
+                # and resize the buffersize or spaces between
+                _text = f"{chars_[randint(0, 1)]}"
                 texto = font_pygame.render(_text, True, _color_)
         
 
@@ -108,27 +116,17 @@ def make_image_from_fonts(file,
     IMG_CRU_RGB = IMG_CRU_RGB.transpose([1, 0, 2])
     # variable temp to save array3d of surface 
     _tmp = surfarray.array3d(arraysurf)
-    #_tmp_01 = surfarray.array3d(_OFF_SET_PYGAME)
-    #_bolinhas = cv2.cvtColor(_tmp_01, cv2.COLOR_BGR2RGB)
-    #_bolinhas = _bolinhas.transpose([1, 0, 2])
+    
     imagem_com_texto = cv2.cvtColor(_tmp, cv2.COLOR_BGR2RGB)
     imagem_com_texto = imagem_com_texto.transpose([1, 0, 2])
-    # save the surface and img with text in the color selected 
-    #cv2.imshow("image_cru", IMG_CRU_RGB)
-    # show the normal image 
+    
     view = imagem_com_texto
-    # show the result of sum by two surface 
-    #cv2.imshow("view_pygame",view)
-    # wait for a key 
-    #cv2.waitKey(0)
-    if _to:
-        cv2.imwrite(_to if _to else "out.jpg", view)
-        #cv2.imwrite("bolinhas_01.jpg", _bolinhas)
-        return _to
-    ############## test End ##################
-    else:
-        return 1
-    #####################################   
+    
+    
+    cv2.imwrite(_to if _to else "out.jpg", view)
+    return _to
+    
+      
 def read_dir_(path: str, ext: str = None):
     # to make the things izi, if you named the pics files with * img_0001.jpg * 
     # ( Optional : if you dont choose extension, will be necessary!)
@@ -150,17 +148,17 @@ def read_dir_(path: str, ext: str = None):
         
 def save_as_video_():
     pass
-def save_as_gif(path: str = "src",
-                out: str = "gato_gif02.gif",
-                file: str = "out_"):
+def save_as_gif(path: str = "src", out: str = "teste_01.gif"):
+    ''' save files from path to save as gif in out '''
     files = os_path(path)
     frames = [Image.open(path+"/"+n) for n in files]
     frame0 = frames[0]
-    frame0.save(f"out/{out}", save_all=True, append_images=frames, duration=120, loop=0)
+    frame0.save(f"out/{out}", save_all=True, append_images=frames, duration=90, loop=0)
     
 def floppy_images(path: str = "src",
                   count: int = 60,
                   file: str = "out_0.jpg"):
+    ''' make a lot of images with edit config '''
     for n in range(0, count):
         _new_file = f"{path}/out_{n}.jpg"
         make_image_from_fonts(file, _to=_new_file)
@@ -181,30 +179,9 @@ def main(file_dict: dict):
     return 0
     # END
 if __name__ == "__main__":
-    floppy_images()
+    floppy_images(file="files/_image.jpeg")
     save_as_gif()
-    #cv2_fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-    
-    
-    # faz varias imagens com ascii random
-    #for n in range(0, 120):
-    #    _new_file = f"src/out_{n}.jpg"
-    #make_image_from_fonts("image_vermei.JPG", _to="testes000.jpg") #, _to="bionario.jpg")
-    #for file in os_path("src"):
-    #_ = os_path("src")
-    
-    #_ = f"src/{_[0]}"
-    #print(_)
-    #frame = cv2.imread(_)
-    #_size = list(frame.shape)
-    #del(_size[2])
-    #_size.reverse()
-    #video = cv2.VideoWriter("out/video_test001.mp4", cv2_fourcc, 6, _size)
-    #for file in os_path("src"):
-    #    _ = f"src/{file}"
-    #    video.write(cv2.imread(_))
-    #video.release()
-
+    print("[*] done.")
 
     input()
     _file_ = None
