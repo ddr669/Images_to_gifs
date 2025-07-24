@@ -1,6 +1,12 @@
 # Images to gif
 ```transforma_gif.py --path path_to_files --size 2 --frame 12 --out out_file```
 
+<br><br>
+
+# Screenshot
+
+<img align="left" href="binary_cat.gif" width="25svw" height="5svh"/>
+<img align="right" href="cute_cat.gif" width="25svw" height="5svh"/>
 
 ## cmdline_verify 
 Just some functions to make the options more easy and clearly like framerate, extensions if yu wanto specificy
