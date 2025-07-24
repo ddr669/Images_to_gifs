@@ -5,8 +5,15 @@
 
 # Screenshot
 
-<img align="left" href="binary_cat.gif" width="25svw" height="5svh"/>
-<img align="right" href="cute_cat.gif" width="25svw" height="5svh"/>
+<div align="center">
+
+| exemple1 | exemple2 |
+| :---: | :---: |
+| ![binary_cat](/binary_cat.gif) | ![cute_cat](/cute_cat.gif) |
+
+</div>
+
+<br>
 
 ## cmdline_verify 
 Just some functions to make the options more easy and clearly like framerate, extensions if yu wanto specificy
