@@ -5,7 +5,6 @@
 ###################
 ###### Imports #######
 from PIL import Image
-import cv2
 import numpy as np
 from sys import argv
 from pygame import Surface, surfarray, SRCALPHA, font, draw, Rect, image
@@ -42,7 +41,7 @@ def make_image_from_fonts(file,
                         font_family: str = "lucidaconsole", 
                         font_size: int = 12,
                         lower_target: list = np.array([0,0,0]),
-                        upper_target: list = np.array([25,25,25]),
+                        upper_target: list = np.array([45,45,45]),
                         save_to: str = None,
                         font_color: tuple = (255,255,255),
                         text: str = None,
@@ -66,23 +65,17 @@ def make_image_from_fonts(file,
     size = _img.image.get_rect()[2:]
     
     arraysurf = Surface((size[0],size[1]), SRCALPHA)
-
     font.init()
     font_pygame = font.SysFont(font_family, font_size)
 
     texto = font_pygame.render(text if text else "", True, font_color)
     arraysurf.fill((0,0,0,0))
-    
         
     sprite_group.draw(arraysurf)
     _tmp = surfarray.array3d(arraysurf)
-    IMG_CRU = _tmp
-    IMG_CRU_RGB = cv2.cvtColor(IMG_CRU, cv2.COLOR_BGR2RGB)
-
-    _tmp = cv2.imread(file)
     
-    lower_target = lower_target#np.array([145, 130, 125]) if not lower_target.all() else lower_target # pra pegar o fundo do gato # grey 
-    upper_target = upper_target#np.array([252, 239, 226]) if not upper_target.all() else upper_target # pra pegar o fundo do gato  # white
+    lower_target = lower_target #np.array([145, 130, 125]) if not lower_target.all() else lower_target # pra pegar o fundo do gato # grey 
+    upper_target = upper_target #np.array([252, 239, 226]) if not upper_target.all() else upper_target # pra pegar o fundo do gato  # white
 
     chars_ = ["0", "1"] if not text else [letter for letter in text] # ░
     # todo: 
@@ -91,44 +84,66 @@ def make_image_from_fonts(file,
 
     for a in range(1, size[1], 12):
         for x in range(1, size[0],8):
-                r,g,b = IMG_CRU_RGB[x][a]
+                r,g,b = _tmp[x][a]
                 if r in range(lower_target[0], upper_target[0]) and g in range(lower_target[1], upper_target[1]) and b in range(lower_target[2],upper_target[2]):
                     if remove_bg:
-                        draw.circle(arraysurf,new_bg_color, (x,a), 4, 0) 
-
+                        draw.rect(arraysurf,new_bg_color, Rect(x, a, 12, 12)) 
                     arraysurf.blit(texto, (x,a))
                 # todo: a way to indentify the size of _text_ 
                 # and resize the buffersize or spaces between
                 _text = f"{chars_[randint(0, len(chars_)-1)]}"
                 texto = font_pygame.render(_text, True, font_color)
-        
-    # rotate
-    IMG_CRU_RGB = IMG_CRU_RGB.transpose([1, 0, 2])
-    # variable temp to save array3d of surface 
+
     _tmp = surfarray.array3d(arraysurf)
-    imagem_com_texto = cv2.cvtColor(_tmp, cv2.COLOR_BGR2RGB)
-    imagem_com_texto = imagem_com_texto.transpose([1, 0, 2])
-    
-    view = imagem_com_texto
-    
-    cv2.imwrite(save_to if save_to else "out.jpg", view)
-    return save_to
+    imagem_com_texto = Image.fromarray(_tmp)
+   
+    view = imagem_com_texto.transpose(Image.Transpose.TRANSPOSE)
+    view = view.quantize(method=2, colors=82, dither=Image.Dither.RASTERIZE).convert('RGB')
+
+    return view
     
 
-def save_as_gif(path: str = "src", out: str = "teste_01.gif"):
+def save_as_gif(file, text: str = 'x;', 
+                img_count: int = 60, 
+                out: str = "teste_rasterized_nobg.gif",
+                target: list = None,
+                remove_bg: bool = False,
+                new_bg_color: tuple = (255,0,0),
+                font_color: tuple = (255,255,255),
+                font_family: str = 'lucidaconsola'):
     ''' save files from path to save as gif in out '''
-    files = os_path(path)
-    frames = [Image.open(path+"/"+n) for n in files]
+    if target:
+        try:
+            lower_target = np.array(target[0])
+            upper_target = np.array(target[1])
+        except IndexError as err:
+            print(f'[!] IndexError: target must be a list of two tuple/list.\n{err}')
+            lower_target = np.array([0,0,0])
+            upper_target = np.array([45,45,45])
+    else:
+        lower_target = np.array([0,0,0])
+        upper_target = np.array([45,45,45])
+
+    if remove_bg:
+        frames = [make_image_from_fonts(file=file,
+                                        text=text,
+                                        lower_target=lower_target,
+                                        upper_target=upper_target,
+                                        remove_bg=True,
+                                        new_bg_color=new_bg_color,
+                                        font_color=font_color,
+                                        font_family=font_family) for _ in range(0, img_count)]
+    else:
+        frames = [make_image_from_fonts(file=file,
+                                        text=text,
+                                        lower_target=lower_target,
+                                        upper_target=upper_target,
+                                        font_color=font_color,
+                                        font_family=font_family)]
+
     frame0 = frames[0]
-    frame0.save(f"out/{out}", save_all=True, append_images=frames, duration=90, loop=0, )
+    frame0.save(f"out/{out}", save_all=True, append_images=frames, duration=90, loop=0)
     
-def floppy_images(path: str = "src",
-                  count: int = 60,
-                  file: str = "out_0.jpg"):
-    ''' make a lot of images with edit config '''
-    for n in range(0, count):
-        _new_file = f"{path}/out_{n}.jpg"
-        make_image_from_fonts(file, text="$#",save_to=_new_file)
 
 def main(file_dict: dict):
     
@@ -141,8 +156,8 @@ def main(file_dict: dict):
  
     # END
 if __name__ == "__main__":
-    floppy_images(file="files/out_0.jpg")
-    save_as_gif()
+    #floppy_images(file="files/out_0.jpg")
+    save_as_gif('files/out_0.jpg')
     print("[*] done.")
 
     input()
