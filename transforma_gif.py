@@ -5,6 +5,7 @@
 ###################
 ###### Imports #######
 from PIL import Image
+import cv2 
 import numpy as np
 from sys import argv
 from pygame import Surface, surfarray, SRCALPHA, font, draw, Rect, image
@@ -19,8 +20,11 @@ class Sprites_(Sprite):
     def __init__(self, color=(0,0,0,0), height: int = None, width: int = None,
                  _file: str = None):
         super().__init__()
-        
-        self.image = image.load(_file) if _file else Surface([width, height])
+        if type(_file) == Image.Image:
+            self.image = image.frombytes(_file.tobytes(), _file.size, 'RGB')
+        else:
+            
+            self.image = image.load(_file) if _file else Surface([width, height])
         
         if width:
             draw.rect(self.image,color,Rect(0,0,width,height))
@@ -31,8 +35,40 @@ class Sprites_(Sprite):
             self.rect = self.image.get_rect()
         #self.image = scale(self.image, (320, 180))
 
-        
+def make_gif_from_video(
+                        file, out: str = "video_as_gif.gif",
+                        frame_counter: int = 90, text: str = "10",
+                        font_color: tuple = (0,0,0),
+                        lower_color: list = np.array([140,140,140]),
+                        upper_color: list = np.array([220,220,220])
+                        ):   
+    
+   
+    cap = cv2.VideoCapture(file)
+    cap.set(cv2.CAP_PROP_FPS, 60.0)
+    cap.set(cv2.CAP_PROP_VIDEO_STREAM, 24)
+    cap.set(cv2.CAP_PROP_HW_ACCELERATION, 1)
+    counter = 0
+    FRAMES = []
 
+    while cap.isOpened():
+        ret, cv2_frame = cap.read()
+        if ret:
+            converted = cv2.cvtColor(cv2_frame, cv2.COLOR_BGR2RGB)
+            pil_image = Image.fromarray(converted)
+            FRAMES.append(make_image_from_fonts(pil_image, text=text, font_color=font_color, lower_target=lower_color, upper_target=upper_color))
+            cv2.waitKey(0)
+            
+        else:
+            break
+        counter += 1
+        if counter >= frame_counter:
+            break
+    cap.release()
+    
+    frame0 = FRAMES[0]
+    
+    frame0.save(f"out/{out}", save_all=True, append_images=FRAMES,duration=90, loop=0)
 
 # xxxxxxxxxxxxxxxxx
 # make a texture to image with pygame.Surface
@@ -42,7 +78,6 @@ def make_image_from_fonts(file,
                         font_size: int = 12,
                         lower_target: list = np.array([0,0,0]),
                         upper_target: list = np.array([45,45,45]),
-                        save_to: str = None,
                         font_color: tuple = (255,255,255),
                         text: str = None,
                         remove_bg: bool = False,
@@ -74,8 +109,8 @@ def make_image_from_fonts(file,
     sprite_group.draw(arraysurf)
     _tmp = surfarray.array3d(arraysurf)
     
-    lower_target = lower_target #np.array([145, 130, 125]) if not lower_target.all() else lower_target # pra pegar o fundo do gato # grey 
-    upper_target = upper_target #np.array([252, 239, 226]) if not upper_target.all() else upper_target # pra pegar o fundo do gato  # white
+    lower_target = lower_target 
+    upper_target = upper_target 
 
     chars_ = ["0", "1"] if not text else [letter for letter in text] # ░
     # todo: 
@@ -89,8 +124,8 @@ def make_image_from_fonts(file,
                     if remove_bg:
                         draw.rect(arraysurf,new_bg_color, Rect(x, a, 12, 12)) 
                     arraysurf.blit(texto, (x,a))
-                # todo: a way to indentify the size of _text_ 
-                # and resize the buffersize or spaces between
+
+
                 _text = f"{chars_[randint(0, len(chars_)-1)]}"
                 texto = font_pygame.render(_text, True, font_color)
 
@@ -123,7 +158,6 @@ def save_as_gif(file, text: str = 'x;',
     else:
         lower_target = np.array([0,0,0])
         upper_target = np.array([45,45,45])
-
     if remove_bg:
         frames = [make_image_from_fonts(file=file,
                                         text=text,
@@ -140,10 +174,8 @@ def save_as_gif(file, text: str = 'x;',
                                         upper_target=upper_target,
                                         font_color=font_color,
                                         font_family=font_family)]
-
     frame0 = frames[0]
     frame0.save(f"out/{out}", save_all=True, append_images=frames, duration=90, loop=0)
-    
 
 def main(file_dict: dict):
     
@@ -156,21 +188,21 @@ def main(file_dict: dict):
  
     # END
 if __name__ == "__main__":
-    #floppy_images(file="files/out_0.jpg")
-    save_as_gif('files/out_0.jpg')
+    make_gif_from_video('jamelao.mp4', out="jamelao_new_altobitrate.gif",
+                        lower_color=np.array([0,0,0]),
+                        upper_color=np.array([45,45,45]),
+                        font_color=(250,0,20))
+    #save_as_gif('files/out_0.jpg')
     print("[*] done.")
 
     input()
     _file_ = None
-    #  TRY ARGS
     try:
         __ = argv[1]
         _file_ = cmdline_verify(argv)
 
     except IndexError as Err:
         _file_ = return_file_()
-        
-    # END;RUN
    
     app = main(_file_) #  if _file_["path"] else main("!")
     
