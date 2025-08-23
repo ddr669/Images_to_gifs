@@ -37,7 +37,8 @@ class Sprites_(Sprite):
             self.rect = self.image.get_rect()
 
 DEBUG_INFO = 1
-
+RED_COLOR = '\033[32m'
+DEFAULT_COLOR = '\033[0m'
 
 def make_video_from_video(
                         file, out: str = "video_as_gif.gif",
@@ -57,12 +58,10 @@ def make_video_from_video(
         print(f"[VideoReader with open-cv2]: Ini")
     init_time = time_now()
     cap = cv2.VideoCapture(file)
-    
-    
     counter = 0
     sub_counter = 0 
-    FRAMES = []
-    CLIPS = []
+    FRAMES = {}
+    #CLIPS = []
     while cap.isOpened():
         ret, cv2_frame = cap.read()
         
@@ -70,15 +69,18 @@ def make_video_from_video(
         if ret:
             converted = cv2.cvtColor(cv2_frame, cv2.COLOR_BGR2RGB)
             pil_image = Image.fromarray(converted)
-            FRAMES.append(make_image_from_fonts(pil_image,
+            if counter % 60 == 0:
+                FRAMES[str(counter)] = pil_image
+            else:
+                
+                FRAMES[str(counter)] = make_image_from_fonts(pil_image,
                                                 text=text,
                                                 font_color=font_color,
                                                 lower_target=lower_color,
                                                 upper_target=upper_color,
                                                 remove_bg=remove_bg,
-                                                new_bg_color=new_bg_color))
-         
-
+                                                new_bg_color=new_bg_color)
+            
         elif ret:
             pass
         else:
@@ -88,31 +90,20 @@ def make_video_from_video(
         if counter >= frame_counter:
             break
     cap.release() 
-   
-    #Image.Image.width
-    #Image.Image.getdata()
     if DEBUG_INFO:
         print("[!done load array in heap]")
-
-    frames = [np.array(_) for _ in FRAMES]
+    frames = [np.array(_) for _ in FRAMES.values()]
     scene = ImageSequenceClip(frames, fps=60)
     audioclip = AudioFileClip(file)
     audioclip.duration = scene.duration
     scene.audio = audioclip
-    
     scene.write_videofile(out)
-    #final_video = CompositeVideoClip([clip, audioclip])
-    #final_video.write_videofile(filename=out,audio=True)
-
-
-    #frame0 = FRAMES[0]
-    #frame0.save(f"out/{out}", save_all=True,append_images=FRAMES,duration=frame_counter, loop=0)
-
     now_time = time_now()
     tempo_de_exec = now_time - init_time
     if DEBUG_INFO:
         print(f"[VideoReader with open-cv2]: time elapsed -> {tempo_de_exec}")
-    
+    del(FRAMES, scene, frames, audioclip, cap, counter, sub_counter)
+
 def make_gif_from_video(
                         file, out: str = "video_as_gif.gif",
                         frame_counter: int = 90, text: str = "10",
@@ -135,6 +126,7 @@ def make_gif_from_video(
         if ret and sub_counter % 3 == 0:
             converted = cv2.cvtColor(cv2_frame, cv2.COLOR_BGR2RGB)
             pil_image = Image.fromarray(converted)
+            
             FRAMES.append(make_image_from_fonts(pil_image,
                                                 text=text,
                                                 font_color=font_color,
@@ -142,6 +134,11 @@ def make_gif_from_video(
                                                 upper_target=upper_color,
                                                 remove_bg=remove_bg,
                                                 new_bg_color=new_bg_color))
+                
+
+            #else:
+            #    FRAMES.append(pil_image)
+
         elif ret:
             pass
         else:
@@ -181,10 +178,13 @@ def make_image_from_fonts(file,
             - text: str, default=["1","0"]
             - remove_bg: bool, default=False.
             - new_bg_color: tuple = (0,0,0).'''
+    global DEBUG_INFO, DEFAULT_COLOR, RED_COLOR
     sprite_group = Group()
+    
     _img = Sprites_(_file=file)
     sprite_group.add(_img)
     size = _img.image.get_rect()[2:]
+    
     arraysurf = Surface((size[0],size[1]), SRCALPHA)
     font.init()
     font_pygame = font.SysFont(font_family, font_size)
@@ -192,22 +192,88 @@ def make_image_from_fonts(file,
     arraysurf.fill((0,0,0,0))
     sprite_group.draw(arraysurf)
     _tmp = surfarray.array3d(arraysurf)
+    if DEBUG_INFO:
+        print(f"[image:{file}] loaded in memory")
+        init_time = time_now()
+    hashmap = {}
+    for y in range(1, int(size[1] / 2), 12):
+        hashmap[str(y)] = {}
+        eixo_x_counter = 0
+        for x in range(1, int(size[0] / 2), 8):
+            if _tmp[x][y][0] in range(lower_target[0],
+                                        upper_target[0]) and _tmp[x][y][1] in range(lower_target[1],
+                                        upper_target[1]) and _tmp[x][y][2] in range(lower_target[2],
+                                        upper_target[2]):
+                hashmap[str(y)][str(x)] = 1
+                eixo_x_counter = 0
+            elif eixo_x_counter == 0 and x >= int((size[0] / 2)/2):
+                break
+
+        eixo_x_counter = 0
+        for x in range(int(size[0]/2), size[0], 8):
+            if _tmp[x][y][0] in range(lower_target[0],
+                                        upper_target[0]) and _tmp[x][y][1] in range(lower_target[1],
+                                        upper_target[1]) and _tmp[x][y][2] in range(lower_target[2],
+                                        upper_target[2]):
+                hashmap[str(y)][str(x)] = 1
+                eixo_x_counter = 1
+            elif eixo_x_counter == 0 and x >= int((size[0] / 2)*1.5):
+                break
+            
+        if len(hashmap[str(y)]) > 1:
+            pass
+        else:
+            hashmap.pop(str(y))
+
+    for y in range(int(size[1]/2), size[1], 12):
+        hashmap[str(y)] = {}
+        eixo_x_counter = 0 
+        for x in range(1, int(size[0] / 2), 8):
+            if _tmp[x][y][0] in range(lower_target[0],
+                                        upper_target[0]) and _tmp[x][y][1] in range(lower_target[1],
+                                        upper_target[1]) and _tmp[x][y][2] in range(lower_target[2],
+                                        upper_target[2]):
+                hashmap[str(y)][str(x)] = 1
+                eixo_x_counter = 1
+            elif eixo_x_counter == 0 and x >= int((size[0] / 2)/2):
+                break
+        eixo_x_counter = 0
+        for x in range(int(size[0]/2), size[0], 8):
+            if _tmp[x][y][0] in range(lower_target[0],
+                                        upper_target[0]) and _tmp[x][y][1] in range(lower_target[1],
+                                        upper_target[1]) and _tmp[x][y][2] in range(lower_target[2],
+                                        upper_target[2]):
+                hashmap[str(y)][str(x)] = 1
+                eixo_x_counter = 1
+
+            elif eixo_x_counter == 0 and x >= int((size[0] / 2) * 1.5):
+                break
+            
+        if len(hashmap[str(y)]) > 1:
+            pass
+        else:
+            hashmap.pop(str(y)) 
+    
     chars_ = ["0", "1"] if not text else [letter for letter in text] # ░
-    for a in range(1, size[1], 12):
-        for x in range(1, size[0],8):
-                r,g,b = _tmp[x][a]
-                if r in range(lower_target[0], upper_target[0]) and g in range(lower_target[1], upper_target[1]) and b in range(lower_target[2],upper_target[2]):
-                    if remove_bg:
-                        draw.rect(arraysurf,new_bg_color, Rect(x, a, 12, 12)) 
-                    arraysurf.blit(texto, (x,a))
-                _text = f"{chars_[randint(0, len(chars_)-1)]}"
-                texto = font_pygame.render(_text, True, font_color)
+    for a in hashmap.keys():
+        for x in hashmap[a].keys():
+            if remove_bg:
+                draw.rect(arraysurf,new_bg_color, Rect(int(x), int(a), 12, 12)) 
+            arraysurf.blit(texto, (int(x),int(a)))
+            _text = f"{chars_[randint(0, len(chars_)-1)]}"
+            texto = font_pygame.render(_text, True, font_color)
+
     _tmp = surfarray.array3d(arraysurf)
+    if DEBUG_INFO:
+        end_time = time_now()
+        print(f"{RED_COLOR}[IMAGE READ AND OVERWRITED]{DEFAULT_COLOR} {end_time-init_time}")
+
     imagem_com_texto = Image.fromarray(_tmp)
     view = imagem_com_texto.transpose(Image.Transpose.TRANSPOSE)
-    view = view.quantize(method=2,colors=140, dither=Image.Dither.RASTERIZE).convert('RGB')
+    
+    view = view.quantize(method=2,colors=180, dither=Image.Dither.RASTERIZE).convert('RGB')
     del(sprite_group)
-    del(_img, arraysurf, font_pygame, texto, _tmp, imagem_com_texto)
+    del(_img, arraysurf, font_pygame, texto, _tmp, imagem_com_texto, x, chars_, hashmap)
     return view
     
 
@@ -249,11 +315,11 @@ def main(file_dict: dict):
         pass
 
 if __name__ == "__main__":
-    make_video_from_video('jamelao.mp4', out="out/jamelao_finaly_mamae.mp4",
+    make_video_from_video('jamelao.mp4', out="out/jaja.mp4",
                         lower_color=np.array([0,0,0]),
-                        upper_color=np.array([120,105,145]),
-                        remove_bg=False,frame_counter=600,
-                        font_color=(250,0,0))
+                        upper_color=np.array([25,25,25]),
+                        remove_bg=True,frame_counter=2400,
+                        font_color=(0,0,0), new_bg_color=(255,0,0))
 
     print("[*] done.")
     input()
