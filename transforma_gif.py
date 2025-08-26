@@ -14,6 +14,8 @@ from cmdline_verify import __help__, return_file_
 from random import randint
 from moviepy import AudioFileClip, ImageSequenceClip
 from os import listdir as os_path
+from os.path import exists as path_exist
+from os import getcwd as GETPWD
 from time import time as time_now
 font.init()
 # mode to load new frame files in memory
@@ -32,7 +34,7 @@ QUANTIZE_IMAGES_GIF:int  = 126      # Default 186 (0 -> 255): from lower bitmap 
 QUANTIZE_IMAGES_VIDEO:int= None     # Default None
 FRAMES_LENGTH_VIDEO_INFO = 0        # Default 0 -> change as a file is set
 #
-REDUCE_PIXEL_GIF:int     = None     # Recommended but not need, 2 is fine to gif
+REDUCE_PIXEL_GIF:int     = None    # Recommended but not need, 2 is fine to gif
 REDUCE_PIXEL_VIDEO:int   = None     # Not recommended
 #
 GREEN_COLOR     = '\033[32m'
@@ -202,7 +204,7 @@ def make_gif_from_video(
                         upper_color: list = np.array([220,220,220]),
                         remove_bg: bool = False,
                         new_bg_color: tuple = (),
-                        resize_new_file: bool = True) -> None:
+                        resize_new_file: bool = False) -> None:
     '''
     Takes a file and make another using cv2.VideoCapture ND moviepy and passing through
     editing az asked in make_image_from_font() until frames equals frame_counter
@@ -226,9 +228,16 @@ def make_gif_from_video(
         print(f"[VideoReader with open-cv2]: Ini")
     init_time = time_now()
     cap = cv2.VideoCapture(file)
+    if path_exist(file):
+        pass
+    else:
+        raise FileNotFoundError(f"\n\rFile {file} doesn't exist in actual path: \n\r{GETPWD()}")
+        
     counter = 0
     sub_counter = 0
     fps_seconds = cap.get(cv2.CAP_PROP_FPS)
+    fps_size_video = cap.get(cv2.CAP_PROP_FRAME_COUNT)
+    frame_counter = fps_size_video if frame_counter == None else frame_counter 
     FRAMES_LENGTH_VIDEO_INFO = frame_counter
     QUANTIZE_IMAGES_VIDEO = QUANTIZE_IMAGES_GIF
     FRAMES = []
@@ -245,10 +254,10 @@ def make_gif_from_video(
                 n_x, n_y = frame_width-50,frame_height-50
                 frame_width = n_x
                 frame_height = n_y
-            pil_image = Image.fromarray(converted).resize((frame_width,frame_height),Image.Resampling.NEAREST)
+            pil_image = Image.fromarray(converted)
             
             FRAMES.append(make_image_from_fonts(pil_image,text=text,font_color=font_color,lower_target=lower_color,upper_target=upper_color,
-                        remove_bg=remove_bg,new_bg_color=new_bg_color,frame_count=counter,reduce=REDUCE_PIXEL_GIF).resize((int(frame_width/1.1),int(frame_height/1.1)),Image.Resampling.NEAREST))
+                        remove_bg=remove_bg,new_bg_color=new_bg_color,frame_count=counter,reduce=REDUCE_PIXEL_GIF))
         elif ret:
             pass
         else:
@@ -259,9 +268,10 @@ def make_gif_from_video(
             break
     cap.release()
     if resize_new_file:
-        FRAMES = [_ for _ in FRAMES]
-    else:
         FRAMES = [_.resize((frame_width-50, frame_height-50), Image.Resampling.NEAREST) for _ in FRAMES]
+    else:
+        FRAMES = [_ for _ in FRAMES]
+
     frame0 = FRAMES[0]
     frame0.save(f"{out}",format="GIF",save_all=True,append_images=FRAMES,duration=fps_seconds,loop=0)
     now_time = time_now()
@@ -285,7 +295,8 @@ def make_image_from_fonts(file,
             with argument and some parameters to return a PIL.Image
             overwrite the pixels in range color between lower and
             upper target. 
-            # Parameters.
+            # Parameters
+            
             \n\t( 
             - font_family: str, default="lucidaconsole".
             \n
@@ -398,6 +409,11 @@ def main(file_dict: dict):
 if __name__ == "__main__":
     #make_video_from_video
     #timenow = time_now()
+    make_gif_from_video('out/gato_low_q_dra.gif', out="out/gato_low_q_dra.gif",
+                        lower_color=np.array([100,100,100]),
+                        upper_color=np.array([165,175,165]),
+                        remove_bg=True,frame_counter=None,text="DDR_669",
+                        font_color=(0,0,0), new_bg_color=(20,20,220))
     #make_video_from_video('out/clown09111_00003.mp4', out="out/clown09111_00003lowqre.mp4",
     #                    lower_color=np.array([20,20,20]),
     #                    upper_color=np.array([55,55,55]),
