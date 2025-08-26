@@ -1,6 +1,24 @@
 #!/bin/python3
 #-*-encode: utf-8-*-
 #
+from sys import argv as args
+
+
+BLACK_RANGE_COLOR    = {"lower_target"  : [0,0,0],       "upper_target": [55,55,55]}
+WHITE_RANGE_COLOR    = {"lower_target"  : [200,200,200], "upper_target": [255,255,255]}
+BLUE_RANGE_COLOR     = {"lower_target"  : [50,50,180],   "upper_target": [150,150,255]}
+RED_RANGE_COLOR      = {"lower_target"  : [180, 50, 50], "upper_target": [255, 150, 150]}
+GREEN_RANGE_COLOR    = {"lower_target"  : [50, 180, 50], "upper_target": [150, 255, 150]}
+#BLUE_RANGE_COLOR     = {"lower_target"  : [50, 50, 180], "upper_target": [150, 150, 255]}
+COLOR_SCHEME_DICT    = {"black": BLACK_RANGE_COLOR,
+                        "white": WHITE_RANGE_COLOR,
+                        "blue": BLUE_RANGE_COLOR,
+                        "red": RED_RANGE_COLOR,
+                        "green": GREEN_RANGE_COLOR,
+                        }
+
+
+
 def __help__(_baner_: bool = True):
     ''' BANNER '''
     if _baner_:
@@ -19,87 +37,75 @@ def __help__(_baner_: bool = True):
 ▕▒▒▒▒▒▒▒▒▒\033[1;37;40m░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░\033[0;0;0m▏
  ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔""")
     
-    print("usage transforma_gif.py -p path_to_files -s 2 -f 12  -o out_file")
-    print("Or usage GUI version -: ")
-    print("\t-p\t|\t--path")
-    print("\t-s\t|\t--size\t|\t-q\t|\t--queue")
-    
-    print("\t-f\t|\t--framerate")
-    print("\t-o\t|\t--out")
-    ''' End Banner '''
+    print("usage transforma_gif.py")
 
 #༺
 # ― 
 # ‾ ⁄ ▰ ▒ ░
 def return_file_() -> dict:
-    _ = { "extension": None,    #   extenção do arquivo
-          "out_ext": "gif",    #   extenção da saida
-          "framerate": 12,       #   framerate da saida
-          "size": 2,            #   quantidade de arquivos
-          "path": "src/",
-          "out_path": None,
-          "GUI": True}        #   caminho dos arquivos
+    _ = {   "framerate": None, 
+            "out_path": "out/",
+            "GUI": True}      
     # ⬊ ☞
-    _["path"] = input("Path to find files/or file.mp4 ☞\t")
-    print(_["path"][:-3]) 
-    #_["size"] = input("how much images ☞\t")
-    #_["out_path"] = input("archive to save ☞\t")
+    #_["path"] = input("Path to find files/or file.mp4 ☞\t")
+    #print(_["path"][:-3]) 
     return _ 
 
 
 def cmdline_verify(array: list) -> dict:
     counter = 0
-    _ = { "extension": None,    #   extenção do arquivo
-          "out_ext": "gif",    #   extenção da saida
-          "framerate": 12,       #   framerate da saida
-          "size": 2,            #   quantidade de arquivos
-          "path": "src/",
-          "out_path": "out/",
-          "GUI": True}       #   caminho dos arquivos
+    _ =     {   "file": None,
+                "framerate": None,
+                "out_path": "out/",
+                "GUI": False,
+                "color_scheme": None}
+    
     for ITEM in array:
+        if "=" in ITEM:
+            if ITEM[:len("--frame")].lower() == "--frame": 
+                _["framerate"] = array[counter].rstrip("=").rsplit("=")[-1]
+            if ITEM[:len("-o")].lower() == "-o" or ITEM[:len("--out")].lower() == "--out":
+                _["out_path"] = array[counter].rstrip("=").rsplit("=")[-1]
+            if ITEM[:len("-f")].lower() == "-f" or ITEM[:len("--file")].lower() == "--file":
+                _["file"] = array[counter].rstrip("=").rsplit("=")[-1]
+            if ITEM[:len("-g")].lower() == "-g" or ITEM[:len("--gui")].lower() == "--gui":
+                _["GUI"] = True
+            if ITEM[:len("-c")].lower() == "-c" or ITEM[:len("--color")].lower() == "--color":
+                _["color_scheme"] = COLOR_SCHEME_DICT[array[counter].rstrip("=").rsplit("=")[-1].lower()]
+
+
         match ITEM:
-            case "-avi" | "-AVI":
-                try: 
-                    _["extension"] = "avi"
-                except IndexError as Err:
-                    return -1
-            case "-ext" | "--extension":
-                try: 
-                    _["extension"] = array[counter + 1]
-                except IndexError as Err:
-                    return -1
-            case "-f" | "--frame" | "--frame-rate":
+            case "--frame" | "--framerate":
                 try: 
                     _["framerate"] = array[counter + 1]
                 except IndexError as Err:
                     return -1
-            case "-s" | "--size" | "-q" | "--quantidade" | "--files":
-                try:
-                    _["size"] = array[counter + 1]
-                except IndexError as Err:
-                    return -1    
-            case "-p" | "--path":
-                try:
-                    _["path"] = array[counter + 1]
-                except IndexError as Err:
-                    return -1 
             case "-o" | "--out":
                 try:
                     _["out_path"] = array[counter + 1]
                 except IndexError as Err:
                     return -1
             case "-g" | "--gui" | "--GUI":
+                _["GUI"] = True
+
+            case "-f" | "--file":
                 try:
-                    _["GUI"] = array[counter + 1]
-                except IndexError as Err:
-                    return -1    
-                
+                    _["file"] = array[counter + 1]
+                except IndexError:
+                    return -1
+            case "-c" | "--color":
+                try:
+                    _["color_scheme"] = COLOR_SCHEME_DICT[array[counter+1].lower()]
+                except IndexError:
+                    return -1
+
         if counter < len(array):
             counter += 1
-        else:
-            return _
+
     return _
 
 if __name__ == "__main__":
-   
-    app = __help__()
+    print(args)
+    _ = cmdline_verify(args)
+    print(_)
+    #app = __help__()
