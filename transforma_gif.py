@@ -409,11 +409,11 @@ def main(file_dict: dict):
 if __name__ == "__main__":
     #make_video_from_video
     #timenow = time_now()
-    make_gif_from_video('out/gato_low_q_dra.gif', out="out/gato_low_q_dra.gif",
-                        lower_color=np.array([100,100,100]),
-                        upper_color=np.array([165,175,165]),
-                        remove_bg=True,frame_counter=None,text="DDR_669",
-                        font_color=(0,0,0), new_bg_color=(20,20,220))
+    make_gif_from_video('out/gato_low_q_dra2.gif', out="out/catglitchXD.gif",
+                        lower_color=np.array([120,120,120]),
+                        upper_color=np.array([165,165,165]),
+                        remove_bg=False,frame_counter=None,text="01",
+                        font_color=(0,0,0), new_bg_color=(220,20,220))
     #make_video_from_video('out/clown09111_00003.mp4', out="out/clown09111_00003lowqre.mp4",
     #                    lower_color=np.array([20,20,20]),
     #                    upper_color=np.array([55,55,55]),
