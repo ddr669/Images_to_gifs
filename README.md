@@ -1,6 +1,6 @@
 # Images to gif
 
-```transforma_gif.py --path path_to_files --size 2 --frame 12 --out out_file```
+```transforma_gif.py```
 
 <br><br>
 
@@ -10,7 +10,7 @@
 
 | exemple1 | exemple2 |
 | :---: | :---: |
-| ![binary_cat](/binary_cat.gif) | ![cute_cat](/cute_cat.gif) |
+| ![glitch_cat_test](out/catglitchXD.gif) | @ |
 
 </div>
 
