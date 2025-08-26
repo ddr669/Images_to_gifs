@@ -19,11 +19,11 @@ def __help__(_baner_: bool = True):
 ▕▒▒▒▒▒▒▒▒▒\033[1;37;40m░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░\033[0;0;0m▏
  ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔""")
     
-    print("usage transforma_gif.py -p path_to_files -s 2 -f 12 -ext jpeg|jpg|bmp|png -o out_file")
+    print("usage transforma_gif.py -p path_to_files -s 2 -f 12  -o out_file")
     print("Or usage GUI version -: ")
     print("\t-p\t|\t--path")
     print("\t-s\t|\t--size\t|\t-q\t|\t--queue")
-    print("\t-ext\t|\t--extension")
+    
     print("\t-f\t|\t--framerate")
     print("\t-o\t|\t--out")
     ''' End Banner '''
