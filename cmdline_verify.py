@@ -108,4 +108,4 @@ if __name__ == "__main__":
     print(args)
     _ = cmdline_verify(args)
     print(_)
-    #app = __help__()
+    app = __help__()
