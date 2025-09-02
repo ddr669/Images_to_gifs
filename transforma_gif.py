@@ -1,4 +1,4 @@
-#!/bin/venv python3
+#!/usr/env python3
 #-*-encode: utf-8-*-
 #-*-By:__DDr669__-*-
 #-*-Date:__/__/__-*-
@@ -17,52 +17,22 @@ from os import listdir as os_path
 from os.path import exists as path_exist
 from os import getcwd as GETPWD
 from time import time as time_now
+
+from src.config_variables import * 
 font.init()
-# mode to load new frame files in memory
-MODE_LOADED_IN_MEMORY = True
-FRAME_TO_SKIP = 188 # cannot be 1
-#                          y,x      y,x to text weight
-PIXEL_READ_DICT = {'1': (6,4), '2': (8,6),      # more accurate between pixel read but worst in speed (takes a lot of time)
-                   '3': (8,4), '4': (12,8),     # I recommend something between 3 and 4
-                   '5': (16, 8), '6': (14,8),   # this is for perfomace and less accurace
-                   '7': (16, 12), '8': (24, 8), # NO ACCURACE
-                   '9': (24, 16), '10': (64, 24)}
-DEBUG_INFO:int|bool      = 1
-PIXEL_READ_COUNTER:int   = 4        # Default 4
-QUANTIZE_IN_SURFACES:int = None     # Warning!
-QUANTIZE_IMAGES_GIF:int  = 126      # Default 186 (0 -> 255): from lower bitmap to better 
-QUANTIZE_IMAGES_VIDEO:int= None     # Default None
-FRAMES_LENGTH_VIDEO_INFO = 0        # Default 0 -> change as a file is set
-#
-REDUCE_PIXEL_GIF:int     = None    # Recommended but not need, 2 is fine to gif
-REDUCE_PIXEL_VIDEO:int   = None     # Not recommended
-#
-GREEN_COLOR     = '\033[32m'
-RED_COLOR       = '\033[31m'
-DEFAULT_COLOR   = '\033[0m'
-RED_BG          = "\033[0;41;31m"
-YELLOW_BG       = '\033[43m'
-YELLOW_COLOR    = '\033[33m'
-#
-WARNING_RAM_OVERFLOW    = f"""{RED_BG}\t\t! WARNING !\t\t{DEFAULT_COLOR}\n
-{RED_COLOR}This application is on tests and has to become better\n
-This warning is to guarantee and prevent to load {RED_BG}larges files{DEFAULT_COLOR}
-\n{RED_COLOR}That function uses a lot of RAM and if you do not have that much could affect your workflow
-\nor even nd worst, can fuck your computer.\n
-please cut that big file and make with parts of them{DEFAULT_COLOR}"""
-WARNING_FRAMERATE_LOSS  = f"""{YELLOW_BG}\t\t ADVICE \t\t{DEFAULT_COLOR}\n
-{YELLOW_COLOR}THIS FILE HAS SO MUCH FPS THAT IS HIGHER THAN A NORMAL FILE\n
-I MADE THIS PROGRAM LOOKING FOR SMALL FILES AND CLIPPEDS FILES\n
-BUT IF YOU CAN WAIT FOR IT, I can't longer help if it break.\n
-if you already clip the file and want to proceed with\n
-a file of 60@fps or want to change to 24@fps?{DEFAULT_COLOR}\n"""
-#
+
 class Sprites_(Sprite):
     def __init__(self, color=(0,0,0,0), height: int = None, width: int = None,
                  _file: str = None):
         super().__init__()
         if type(_file) == Image.Image:
-            self.image = image.frombytes(_file.tobytes(), _file.size, 'RGB')
+            try:
+                self.image = image.frombytes(_file.tobytes(), _file.size,  'RGB')
+                self.mode = "RGB"
+            except ValueError:
+                
+                self.image = image.frombytes(_file.tobytes(), _file.size, 'RGBA')
+                self.mode = "RGBA"
         else:
             self.image = image.load(_file) if _file else Surface([width, height])
         if width:
@@ -278,8 +248,39 @@ def make_gif_from_video(
     tempo_de_exec = now_time - init_time
     if DEBUG_INFO:
         print(f"[VideoReader with open-cv2]: time elapsed -> {tempo_de_exec}")
+def remove_range_color(file,
+                        lower_target: list = np.array([0,0,0]),
+                        upper_target: list = np.array([45,45,45]),
+                        remove_bg: bool = True,
+                        new_bg_color: tuple = (0,0,0)
+                        )->Image.Image:
+    
+    sprite_group = Group()
+    if type(file) == Surface:
+        
+        file = Image.fromarray(surfarray.array3d(file))
+    if type(file) == str:
+       
+        file = Image.open(file).convert()
+    _img = Sprites_(_file=file)
+    sprite_group.add(_img)
+    size = _img.image.get_rect()[2:]
+    arraysurf = Surface((size[0],size[1]), SRCALPHA)
+    sprite_group.draw(arraysurf)
+    _temp = surfarray.array3d(arraysurf)
+    rgb = cv2.cvtColor(_temp, cv2.COLOR_BGR2RGB)
+    #cv2.imwrite('out/aaaaneew.png', rgb)
+    mask = cv2.inRange(rgb, lower_target, upper_target)
+    new_rgb = cv2.bitwise_not(rgb, rgb, mask=mask)
+   # cv2.imwrite('out/removed.png',new_rgb)
+    
+   # cv2.imwrite("out/aaanew.png", mask)
+        
+    return Image.fromarray(new_rgb, 'RGB').transpose(Image.Transpose.TRANSPOSE)
 
-def make_image_from_fonts(file,
+
+
+def make_image_from_fontsHASH(file,
                         font_family: str = "lucidaconsole", 
                         font_size: int = 12,
                         lower_target: list = np.array([0,0,0]),
@@ -290,6 +291,7 @@ def make_image_from_fonts(file,
                         new_bg_color: tuple = (0,0,0),
                         frame_count: int = None,
                         reduce: int = None)->Image.Image:
+    
     '''*make_image_from_fonts
             Takes a file object or PIL.Image object 
             with argument and some parameters to return a PIL.Image
@@ -315,7 +317,7 @@ def make_image_from_fonts(file,
             - new_bg_color: tuple = (0,0,0).
             \n\t)->PIL.Image.Image'''
     
-    global DEBUG_INFO, DEFAULT_COLOR, RED_COLOR, PIXEL_READ_COUNTER, PIXEL_READ_DICT, FRAMES_LENGTH_VIDEO_INFO
+    global PIXEL_READ_COUNTER, PIXEL_READ_DICT, FRAMES_LENGTH_VIDEO_INFO
     PIXEL_READ_DICT = PIXEL_READ_DICT
     PIXEL_READ_COUNTER = PIXEL_READ_COUNTER
     sprite_group = Group()
@@ -409,11 +411,11 @@ def main(file_dict: dict):
 if __name__ == "__main__":
     #make_video_from_video
     #timenow = time_now()
-    make_gif_from_video('out/gato_low_q_dra2.gif', out="out/catglitchXD.gif",
-                        lower_color=np.array([120,120,120]),
-                        upper_color=np.array([165,165,165]),
-                        remove_bg=False,frame_counter=None,text="01",
-                        font_color=(0,0,0), new_bg_color=(220,20,220))
+    #make_gif_from_video('out/gato_low_q_dra2.gif', out="out/catglitchXD.gif",
+    #                    lower_color=np.array([120,120,120]),
+    #                    upper_color=np.array([165,165,165]),
+    #                    remove_bg=False,frame_counter=None,text="01",
+    #                    font_color=(0,0,0), new_bg_color=(220,20,220))
     #make_video_from_video('out/clown09111_00003.mp4', out="out/clown09111_00003lowqre.mp4",
     #                    lower_color=np.array([20,20,20]),
     #                    upper_color=np.array([55,55,55]),
@@ -422,7 +424,7 @@ if __name__ == "__main__":
     #print(f"time: {time_now()-timenow}", end="\t")
     #print("[*] done.")
     #input()
-
+    remove_range_color('out/mapa_.png')
     _file_ = None
     try:
         __ = argv[1]
