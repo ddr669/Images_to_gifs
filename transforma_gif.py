@@ -22,8 +22,8 @@ from src.config_variables import *
 font.init()
 
 class Sprites_(Sprite):
-    def __init__(self, color=(0,0,0,0), height: int = None, width: int = None,
-                 _file: str = None):
+    def __init__(self, _file: str = None, color=(0,0,0,0), height: int = None, width: int = None
+                ):
         super().__init__()
         if type(_file) == Image.Image:
             try:
@@ -40,6 +40,29 @@ class Sprites_(Sprite):
         
         self.rect = self.image.get_rect()    
 #
+
+
+def create_surface(file: str | Image.Image | Surface, size: list | tuple = None):
+    sprite_group = Group()
+    if type(file) == Surface:
+        file = Image.fromarray(surfarray.array3d(file))
+    if type(file) == str:
+        file = Image.open(file).convert()
+
+    if size:
+        file.resize(size)
+
+    _img = Sprites_(_file=file)
+    sprite_group.add(_img)
+    size = _img.image.get_rect()[2:]
+    arraysurf = Surface((size[0],size[1]), SRCALPHA)
+    sprite_group.draw(arraysurf)
+    _temp = surfarray.array3d(arraysurf)
+    del _img, sprite_group, size, arraysurf
+
+    return _temp 
+
+
 def make_video_from_video(
                         file,
                         out: str = "video_as_mp4.mp4",
@@ -248,36 +271,161 @@ def make_gif_from_video(
     tempo_de_exec = now_time - init_time
     if DEBUG_INFO:
         print(f"[VideoReader with open-cv2]: time elapsed -> {tempo_de_exec}")
-def remove_range_color(file,
+def remove_range_colorBitwiseNot(file: Surface | Image.Image,
+                        lower_target: list = np.array([0,0,0]),
+                        upper_target: list = np.array([45,45,45]),
+                        
+                        )->Image.Image:
+
+    _temp = create_surface(file)
+    if type(lower_target) == list or type(lower_target) == tuple:
+        lower_target = np.array(lower_target)
+        upper_target = np.array(upper_target)
+    rgb = cv2.cvtColor(_temp, cv2.COLOR_BGR2RGB)
+    mask = cv2.inRange(rgb, lower_target, upper_target)
+    new_rgb = cv2.bitwise_not(rgb, rgb, mask=mask) 
+
+    return Image.fromarray(new_rgb, 'RGB').transpose(Image.Transpose.TRANSPOSE)
+
+def insert_imageBitwiseNot(file: Surface | Image.Image,
                         lower_target: list = np.array([0,0,0]),
                         upper_target: list = np.array([45,45,45]),
                         remove_bg: bool = True,
-                        new_bg_color: tuple = (0,0,0)
+                        new_bg_surf: Surface | Image.Image = None
                         )->Image.Image:
     
-    sprite_group = Group()
-    if type(file) == Surface:
-        
-        file = Image.fromarray(surfarray.array3d(file))
-    if type(file) == str:
-       
-        file = Image.open(file).convert()
-    _img = Sprites_(_file=file)
-    sprite_group.add(_img)
-    size = _img.image.get_rect()[2:]
-    arraysurf = Surface((size[0],size[1]), SRCALPHA)
-    sprite_group.draw(arraysurf)
-    _temp = surfarray.array3d(arraysurf)
+    _temp = create_surface(file)
+    if new_bg_surf:
+        bg_temp = create_surface(new_bg_surf)
+        if _temp.size < bg_temp.size:
+            _temp = Image.open(file).convert()
+            bg_temp = Image.open(new_bg_surf).convert()
+            bg_temp = bg_temp.resize(_temp.size)
+            _temp = create_surface(_temp)
+            bg_temp = create_surface(bg_temp)
+        new_bg = cv2.cvtColor(bg_temp, cv2.COLOR_BGR2RGB)
+    if type(lower_target) == list or type(lower_target) == tuple:
+        lower_target = np.array(lower_target)
+        upper_target = np.array(upper_target)
+
     rgb = cv2.cvtColor(_temp, cv2.COLOR_BGR2RGB)
-    #cv2.imwrite('out/aaaaneew.png', rgb)
     mask = cv2.inRange(rgb, lower_target, upper_target)
     new_rgb = cv2.bitwise_not(rgb, rgb, mask=mask)
-   # cv2.imwrite('out/removed.png',new_rgb)
-    
-   # cv2.imwrite("out/aaanew.png", mask)
-        
-    return Image.fromarray(new_rgb, 'RGB').transpose(Image.Transpose.TRANSPOSE)
+    if not new_bg_surf:
+        pass
+    else:
+        new_rgb = cv2.add(new_rgb, cv2.bitwise_not(new_bg,mask, mask=mask))
+    return Image.fromarray(new_rgb).transpose(Image.Transpose.TRANSPOSE)
 
+def glitchImageMask(file: Surface | Image.Image,
+                        lower_target: list = np.array([0,0,0]),
+                        upper_target: list = np.array([45,45,45]),
+                        new_bg_surf: Surface | Image.Image = None
+                        )->Image.Image:
+    """ Make a image with file image or surface, and a
+        new_bg image to create a mask to glitch at all.
+        Args:
+            file ( pygame.Surface | PIL.Image.Image ): base file to insert a bg.
+            lower_target ( list | numpy.array ): lower color range to pick.
+            upper_targe ( list | numpy.array ): upper color range to pick.
+            new_bg_surf ( pygame.Surface | PIL.Image.Image ): file to insert.
+        Returns:
+            PIL.Image.Image: Image 
+    """
+    _temp = create_surface(file)
+    if new_bg_surf:
+        bg_temp = create_surface(new_bg_surf)
+        if _temp.size < bg_temp.size:
+            _temp = Image.open(file).convert()
+            bg_temp = Image.open(new_bg_surf).convert()
+            bg_temp = bg_temp.resize(_temp.size)
+            _temp = create_surface(_temp)
+            bg_temp = create_surface(bg_temp)
+        new_bg = cv2.cvtColor(bg_temp, cv2.COLOR_BGR2RGB)
+    if type(lower_target) == list or type(lower_target) == tuple:
+        lower_target = np.array(lower_target)
+        upper_target = np.array(upper_target)
+    rgb = cv2.cvtColor(_temp, cv2.COLOR_BGR2RGB)
+    mask = cv2.inRange(rgb, lower_target, upper_target)
+    new_rgb = cv2.bitwise_and(rgb, new_bg, mask=mask)
+    if not new_bg_surf:
+        pass
+    else:
+        new_bg = cv2.bitwise_and(new_bg, rgb)
+        new_rgb = cv2.add(new_rgb, rgb+new_bg)
+    return Image.fromarray(new_rgb).transpose(Image.Transpose.TRANSPOSE)
+def insert_image_in_mask(file: Surface | Image.Image,
+                        lower_target: list = np.array([0,0,0]),
+                        upper_target: list = np.array([45,45,45]),
+                        new_bg_surf: Surface | Image.Image = None
+                        )->Image.Image:
+    """
+    Insert a image in another by a mask choose by range color.
+    Args:
+        file ( pygame.Surface | PIL.Image.Image ): base file to insert a bg.
+        lower_target ( list | numpy.array ): lower color range to pick.
+        upper_targe ( list | numpy.array ): upper color range to pick.
+        new_bg_surf ( pygame.Surface | PIL.Image.Image ): file to insert.
+
+    Returns:
+        PIL.Image.Image: Image 
+    """
+    _temp = create_surface(file)
+    if new_bg_surf:
+        bg_temp = create_surface(new_bg_surf)
+        if _temp.size < bg_temp.size:
+            
+            _temp = Image.open(file).convert()
+            bg_temp = Image.open(new_bg_surf).convert()
+            bg_temp = bg_temp.resize(_temp.size)
+            _temp = create_surface(_temp)
+            bg_temp = create_surface(bg_temp)
+        new_bg = cv2.cvtColor(bg_temp, cv2.COLOR_BGR2RGB)
+    if type(lower_target) == list or type(lower_target) == tuple:
+        lower_target = np.array(lower_target)
+        upper_target = np.array(upper_target)
+    rgb = cv2.cvtColor(_temp, cv2.COLOR_BGR2RGB)
+    mask = cv2.inRange(rgb, lower_target, upper_target)
+    new_rgb = cv2.bitwise_and(rgb, rgb, mask=mask)
+    if not new_bg_surf:
+        pass
+    else:
+        new_bg = cv2.bitwise_and(new_bg, new_bg, mask=mask)
+        new_rgb = cv2.add(new_bg,rgb-new_rgb)
+    return Image.fromarray(new_rgb).transpose(Image.Transpose.TRANSPOSE)
+
+
+def insert_imageBitwiseAnd(file: Surface | Image.Image,
+                        lower_target: list = np.array([0,0,0]),
+                        upper_target: list = np.array([45,45,45]),
+                        remove_bg: bool = True,
+                        new_bg_surf: Surface | Image.Image = None
+                        )->Image.Image:
+    
+    _temp = create_surface(file)
+
+    if new_bg_surf:
+        bg_temp = create_surface(new_bg_surf)
+        if _temp.size < bg_temp.size:
+            
+            _temp = Image.open(file).convert()
+            bg_temp = Image.open(new_bg_surf).convert()
+            bg_temp = bg_temp.resize(_temp.size)
+            _temp = create_surface(_temp)
+            bg_temp = create_surface(bg_temp)
+
+        new_bg = cv2.cvtColor(bg_temp, cv2.COLOR_BGR2RGB)
+    
+    if type(lower_target) == list or type(lower_target) == tuple:
+        lower_target = np.array(lower_target)
+        upper_target = np.array(upper_target)
+
+    rgb = cv2.cvtColor(_temp, cv2.COLOR_BGR2RGB)
+    mask = cv2.inRange(rgb, lower_target, upper_target)
+    #unmas = cv2.bitwise_not(mask)
+    new_rgb = cv2.bitwise_not(rgb, rgb, mask=mask) if not new_bg_surf else cv2.bitwise_and(rgb, new_bg, mask=mask)
+    #remove_range_colorBitwiseNot(file, lower_target, upper_target, True, mask).save("novo.png")
+    return Image.fromarray(new_rgb).transpose(Image.Transpose.TRANSPOSE)
 
 
 def make_image_from_fontsHASH(file,
@@ -409,22 +557,9 @@ def main(file_dict: dict):
         pass
 
 if __name__ == "__main__":
-    #make_video_from_video
-    #timenow = time_now()
-    #make_gif_from_video('out/gato_low_q_dra2.gif', out="out/catglitchXD.gif",
-    #                    lower_color=np.array([120,120,120]),
-    #                    upper_color=np.array([165,165,165]),
-    #                    remove_bg=False,frame_counter=None,text="01",
-    #                    font_color=(0,0,0), new_bg_color=(220,20,220))
-    #make_video_from_video('out/clown09111_00003.mp4', out="out/clown09111_00003lowqre.mp4",
-    #                    lower_color=np.array([20,20,20]),
-    #                    upper_color=np.array([55,55,55]),
-    #                    remove_bg=True,frame_counter=250,text="R",
-    #                    font_color=(255,255,255), new_bg_color=(0,0,0))
-    #print(f"time: {time_now()-timenow}", end="\t")
-    #print("[*] done.")
-    #input()
-    remove_range_color('out/mapa_.png')
+ 
+    insert_imageMaskWithMask('out/mapa_.png', [200,200,200], [255,255,255], new_bg_surf='out/gato_stealth.jpg').save("out/new_file.jpg")
+    #glitchImageMask('out/mapa_.png', [200,200,200], [255,255,255], new_bg_surf='out/gato_stealth.jpg').save("out/new_file.jpg")
     _file_ = None
     try:
         __ = argv[1]
