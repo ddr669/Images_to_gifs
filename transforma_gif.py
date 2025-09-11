@@ -17,52 +17,74 @@ from os import listdir as os_path
 from os.path import exists as path_exist
 from os import getcwd as GETPWD
 from time import time as time_now
-
 from src.config_variables import * 
 font.init()
-
-class Sprites_(Sprite):
-    def __init__(self, _file: str = None, color=(0,0,0,0), height: int = None, width: int = None
-                ):
-        super().__init__()
-        if type(_file) == Image.Image:
-            try:
-                self.image = image.frombytes(_file.tobytes(), _file.size,  'RGB')
-                self.mode = "RGB"
-            except ValueError:
-                
-                self.image = image.frombytes(_file.tobytes(), _file.size, 'RGBA')
-                self.mode = "RGBA"
+def make_gif_from_video( 
+                        file, out: str = "video_as_gif.gif",
+                        frame_counter: int = 90, text: str = "10",
+                        font_color: tuple = (0,0,0),
+                        lower_color: list = np.array([140,140,140]),
+                        upper_color: list = np.array([220,220,220]),
+                        remove_bg: bool = False,
+                        new_bg_color: tuple = (),
+                        resize_new_file: bool = False) -> None:
+    '''
+    Takes a file and make another using cv2.VideoCapture ND moviepy and passing through
+    editing az asked in make_image_from_font() until frames equals frame_counter
+    nd save az gif file format.
+    '''
+    global DEBUG_INFO, FRAMES_LENGTH_VIDEO_INFO, QUANTIZE_IMAGES_GIF, QUANTIZE_IMAGES_VIDEO
+    if DEBUG_INFO:
+        print(f"[VideoReader with open-cv2]: Ini")
+    init_time = time_now()
+    cap = cv2.VideoCapture(file)
+    if path_exist(file):
+        pass
+    else:
+        raise FileNotFoundError(f"\n\rFile {file} doesn't exist in actual path: \n\r{GETPWD()}")
+    counter = 0
+    sub_counter = 0
+    fps_seconds = cap.get(cv2.CAP_PROP_FPS)
+    fps_size_video = cap.get(cv2.CAP_PROP_FRAME_COUNT)
+    frame_counter = fps_size_video if frame_counter == None else frame_counter 
+    FRAMES_LENGTH_VIDEO_INFO = frame_counter
+    QUANTIZE_IMAGES_VIDEO = QUANTIZE_IMAGES_GIF
+    FRAMES = []
+    while cap.isOpened():
+        ret, cv2_frame = cap.read()
+        if ret:
+            converted = cv2.cvtColor(cv2_frame, cv2.COLOR_BGR2RGB)
+            frame_width, frame_height = converted.shape[1], converted.shape[0]
+            if frame_width > 720 and frame_height > 415:
+                n_x, n_y = int(frame_width / 1.5), int(frame_height / 1.5)
+                frame_width = n_x
+                frame_height = n_y
+            else:
+                n_x, n_y = frame_width-50,frame_height-50
+                frame_width = n_x
+                frame_height = n_y
+            pil_image = Image.fromarray(converted)
+            FRAMES.append(make_image_from_fonts(pil_image,text=text,font_color=font_color,lower_target=lower_color,upper_target=upper_color,
+                        remove_bg=remove_bg,new_bg_color=new_bg_color,frame_count=counter,reduce=REDUCE_PIXEL_GIF))
+        elif ret:
+            pass
         else:
-            self.image = image.load(_file) if _file else Surface([width, height])
-        if width:
-            draw.rect(self.image,color,Rect(0,0,width,height))
-        
-        self.rect = self.image.get_rect()    
-#
-
-
-def create_surface(file: str | Image.Image | Surface, size: list | tuple = None):
-    sprite_group = Group()
-    if type(file) == Surface:
-        file = Image.fromarray(surfarray.array3d(file))
-    if type(file) == str:
-        file = Image.open(file).convert()
-
-    if size:
-        file.resize(size)
-
-    _img = Sprites_(_file=file)
-    sprite_group.add(_img)
-    size = _img.image.get_rect()[2:]
-    arraysurf = Surface((size[0],size[1]), SRCALPHA)
-    sprite_group.draw(arraysurf)
-    _temp = surfarray.array3d(arraysurf)
-    del _img, sprite_group, size, arraysurf
-
-    return _temp 
-
-
+            break
+        counter += 1
+        sub_counter += 1
+        if counter >= frame_counter:
+            break
+    cap.release()
+    if resize_new_file:
+        FRAMES = [_.resize((frame_width-50, frame_height-50), Image.Resampling.NEAREST) for _ in FRAMES]
+    else:
+        FRAMES = [_ for _ in FRAMES]
+    frame0 = FRAMES[0]
+    frame0.save(f"{out}",format="GIF",save_all=True,append_images=FRAMES,duration=fps_seconds,loop=0)
+    now_time = time_now()
+    tempo_de_exec = now_time - init_time
+    if DEBUG_INFO:
+        print(f"[VideoReader with open-cv2]: time elapsed -> {tempo_de_exec}")
 def make_video_from_video(
                         file,
                         out: str = "video_as_mp4.mp4",
@@ -80,19 +102,6 @@ def make_video_from_video(
     Takes a file and make another using <code>cv2.VideoCapture()</code> ND moviepy and passing through
     editing az asked in <code>make_image_from_font()</code> until frames equals frame_counter or video_size
     nd save az <code>mp4|AMV|avi</code> file format.
-    <ul>
-    <h2>Parameters</h2>
-    <li><h3>file </h3></li>
-    <li><h3>out </h3></li>
-    <li><h3>frame_counter </h3></li>
-    <li><h3>text</h3></li>
-    <li><h3>font_color</h3></li>
-    <li><h3>lower_color</h3></li>
-    <li><h3>upper_color</h3></li>
-    <li><h3>remove_bg</h3></li>
-    <li><h3>new_bg_color</h3></li>
-    <li><h3>resize_new_file</h3></li>
-    </ul>
     '''
     global FRAMES_LENGTH_VIDEO_INFO
     global DEBUG_INFO, FRAME_TO_SKIP
@@ -158,8 +167,8 @@ def make_video_from_video(
                 reduces = None if not REDUCE_PIXEL_VIDEO else REDUCE_PIXEL_VIDEO
                 if MODE_LOADED_IN_MEMORY:
                    FRAMES.append(make_image_from_fonts(pil_image,text=text,font_color=font_color,
-                                                    lower_target=lower_color,upper_target=upper_color,remove_bg=remove_bg,
-                                                    new_bg_color=new_bg_color, frame_count=counter, reduce=reduces))
+                    lower_target=lower_color,upper_target=upper_color,remove_bg=remove_bg,
+                     new_bg_color=new_bg_color, frame_count=counter, reduce=reduces))
                 else:
                     pass
         elif ret:
@@ -189,103 +198,126 @@ def make_video_from_video(
     del(FRAMES, scene, frames, audioclip, cap, counter, sub_counter)
     return 0
 
-def make_gif_from_video( 
-                        file, out: str = "video_as_gif.gif",
-                        frame_counter: int = 90, text: str = "10",
-                        font_color: tuple = (0,0,0),
-                        lower_color: list = np.array([140,140,140]),
-                        upper_color: list = np.array([220,220,220]),
-                        remove_bg: bool = False,
-                        new_bg_color: tuple = (),
-                        resize_new_file: bool = False) -> None:
-    '''
-    Takes a file and make another using cv2.VideoCapture ND moviepy and passing through
-    editing az asked in make_image_from_font() until frames equals frame_counter
-    nd save az gif file format.
-    <ul>
-    <h2>Parameters</h2>
-    <li><h3>file </h3></li>
-    <li><h3>out </h3></li>
-    <li><h3>frame_counter </h3></li>
-    <li><h3>text</h3></li>
-    <li><h3>font_color</h3></li>
-    <li><h3>lower_color</h3></li>
-    <li><h3>upper_color</h3></li>
-    <li><h3>remove_bg</h3></li>
-    <li><h3>new_bg_color</h3></li>
-    <li><h3>resize_new_file</h3></li>
-    </ul>
-    '''
-    global DEBUG_INFO, FRAMES_LENGTH_VIDEO_INFO, QUANTIZE_IMAGES_GIF, QUANTIZE_IMAGES_VIDEO
-    if DEBUG_INFO:
-        print(f"[VideoReader with open-cv2]: Ini")
-    init_time = time_now()
-    cap = cv2.VideoCapture(file)
-    if path_exist(file):
-        pass
-    else:
-        raise FileNotFoundError(f"\n\rFile {file} doesn't exist in actual path: \n\r{GETPWD()}")
+class Sprites_(Sprite):
+    def __init__(self, _file: str | Image.Image = None,
+                 color=(0,0,0,0),
+                 height: int = None,
+                 width: int = None
+                ):
+        super().__init__()
         
-    counter = 0
-    sub_counter = 0
-    fps_seconds = cap.get(cv2.CAP_PROP_FPS)
-    fps_size_video = cap.get(cv2.CAP_PROP_FRAME_COUNT)
-    frame_counter = fps_size_video if frame_counter == None else frame_counter 
-    FRAMES_LENGTH_VIDEO_INFO = frame_counter
-    QUANTIZE_IMAGES_VIDEO = QUANTIZE_IMAGES_GIF
-    FRAMES = []
-    while cap.isOpened():
-        ret, cv2_frame = cap.read()
-        if ret:
-            converted = cv2.cvtColor(cv2_frame, cv2.COLOR_BGR2RGB)
-            frame_width, frame_height = converted.shape[1], converted.shape[0]
-            if frame_width > 720 and frame_height > 415:
-                n_x, n_y = int(frame_width / 1.5), int(frame_height / 1.5)
-                frame_width = n_x
-                frame_height = n_y
-            else:
-                n_x, n_y = frame_width-50,frame_height-50
-                frame_width = n_x
-                frame_height = n_y
-            pil_image = Image.fromarray(converted)
-            
-            FRAMES.append(make_image_from_fonts(pil_image,text=text,font_color=font_color,lower_target=lower_color,upper_target=upper_color,
-                        remove_bg=remove_bg,new_bg_color=new_bg_color,frame_count=counter,reduce=REDUCE_PIXEL_GIF))
-        elif ret:
-            pass
+        if type(_file) == Image.Image:
+            try:
+                self.image = image.frombytes(_file.tobytes(), _file.size,  'RGBA')
+                self.mode = "RGBA"
+            except ValueError:
+                self.image = image.frombytes(_file.tobytes(), _file.size, _tmp_img.mode)
+                self.mode = _tmp_img.mode
+        elif type(_file) == np.ndarray:
+            _tmp_img = Image.fromarray(_file).convert()
+            self.image = image.frombytes(_tmp_img.tobytes(), _tmp_img.size,_tmp_img.mode)
+            self.mode = _tmp_img.mode
         else:
-            break
-        counter += 1
-        sub_counter += 1
-        if counter >= frame_counter:
-            break
-    cap.release()
-    if resize_new_file:
-        FRAMES = [_.resize((frame_width-50, frame_height-50), Image.Resampling.NEAREST) for _ in FRAMES]
-    else:
-        FRAMES = [_ for _ in FRAMES]
+            self.image = image.load(_file)
+        if width:
+            draw.rect(self.image,color,Rect(0,0,width,height))
+        self.rect = self.image.get_rect()    
 
-    frame0 = FRAMES[0]
-    frame0.save(f"{out}",format="GIF",save_all=True,append_images=FRAMES,duration=fps_seconds,loop=0)
-    now_time = time_now()
-    tempo_de_exec = now_time - init_time
-    if DEBUG_INFO:
-        print(f"[VideoReader with open-cv2]: time elapsed -> {tempo_de_exec}")
-def remove_range_colorBitwiseNot(file: Surface | Image.Image,
+def return_array(file: str):
+    return cv2.imread(file, cv2.IMREAD_UNCHANGED)
+    
+
+def create_surface(file: str | Image.Image | Surface, size: list | tuple = None):
+    sprite_group = Group()
+    if type(file) == Surface:
+        file = Image.fromarray(surfarray.array3d(file))
+    if type(file) == str:
+        file = Image.open(file).convert()
+    
+    if size:
+        file.resize(size)
+    _img = Sprites_(_file=file)
+    mode = _img.mode
+    if mode == 'RGBA':
+        file_ = np.array(file)
+        _temp = cv2.cvtColor(file_, cv2.COLOR_RGBA2BGRA)
+
+    else:
+        sprite_group.add(_img)
+        size = _img.image.get_rect()[2:]
+        arraysurf = Surface((size[0],size[1]), SRCALPHA)
+        sprite_group.draw(arraysurf)
+        _temp = surfarray.array3d(arraysurf)
+        del _img, sprite_group, size, arraysurf
+    return _temp, mode
+
+def create_mask(file: Surface | Image.Image,
+                lower_target: np.array = np.array([0,0,0]),
+                upper_target: np.array = np.array([0,0,0])
+                ):
+    file_, mode_ = create_surface(file)
+    mask = cv2.inRange(file_, lower_target, upper_target)
+    return mask
+
+def return_alpha_image(file: str):
+    img_with_alpha = cv2.imread(file)
+    try:
+        b, g, r, alpha = cv2.split(img_with_alpha)
+    except ValueError:
+        new_ = cv2.cvtColor(img_with_alpha, cv2.COLOR_BGR2BGRA)
+        b, g, r, alpha = cv2.split(new_)
+
+    return cv2.merge([b,g,r,alpha]) 
+
+def remove_range_color(file: Surface | Image.Image,
                         lower_target: list = np.array([0,0,0]),
                         upper_target: list = np.array([45,45,45]),
                         
                         )->Image.Image:
-
-    _temp = create_surface(file)
+    _temp = return_alpha_image(file)
     if type(lower_target) == list or type(lower_target) == tuple:
         lower_target = np.array(lower_target)
         upper_target = np.array(upper_target)
-    rgb = cv2.cvtColor(_temp, cv2.COLOR_BGR2RGB)
+    rgb = cv2.cvtColor(_temp, cv2.COLOR_BGRA2RGBA)
     mask = cv2.inRange(rgb, lower_target, upper_target)
-    new_rgb = cv2.bitwise_not(rgb, rgb, mask=mask) 
+    new_rgb = cv2.bitwise_not(rgb,mask, mask=mask) 
+    
+    return Image.fromarray(rgb+new_rgb, 'RGBA').transpose(Image.Transpose.TRANSPOSE)
+def insert_imageInCoord(file, over_file, coord: list | tuple = [0,0]) -> Image.Image:
+    new_file = cv2.imread(over_file, cv2.IMREAD_UNCHANGED)
+    file_m, mode_m = create_surface(file)
+    kk_, mode_k = create_surface(new_file)
+    tmp_ = Image.fromarray(file_m, mode=mode_m)
+    new = Image.fromarray(kk_, mode=mode_k)
+    tmp_.paste(kk_, coord)
+    return tmp_
 
-    return Image.fromarray(new_rgb, 'RGB').transpose(Image.Transpose.TRANSPOSE)
+def insert_imageInCoordDeprecate(file: Surface | Image.Image,
+                        new_file: Surface | Image.Image,
+                        coord: list | tuple = [0,0],
+                        remove_bg: bool = None,
+                        lower_target: np.array = None,
+                        upper_target: np.array = None
+                        ) -> Image.Image:
+    file_tmp, modeF = create_surface(file)
+    file_= Image.fromarray(file_tmp, mode=modeF)
+    new_file_tmp, modeN = create_surface(new_file)
+    
+    new_file = Image.fromarray(new_file_tmp, mode=modeN)
+
+    if remove_bg:
+        mask = create_mask(new_file_tmp, lower_target, upper_target)
+        new_file = Image.fromarray(new_file_tmp, mode=modeN)
+        layer = Image.new('RGBA', new_file.size, (0,0,0,0))
+        layer.paste(new_file, (0,0))
+        layer2 = layer.copy()
+        layer2.putalpha(128)
+        layer.paste(layer2, layer)
+        #new_file.apply_transparency()
+        layer.alpha_composite(layer,[coord[0], coord[1]], [0,0])
+    file_.paste(new_file, coord)
+    
+    return file_.transpose(Image.Transpose.TRANSPOSE)
 
 def insert_imageBitwiseNot(file: Surface | Image.Image,
                         lower_target: list = np.array([0,0,0]),
@@ -293,7 +325,6 @@ def insert_imageBitwiseNot(file: Surface | Image.Image,
                         remove_bg: bool = True,
                         new_bg_surf: Surface | Image.Image = None
                         )->Image.Image:
-    
     _temp = create_surface(file)
     if new_bg_surf:
         bg_temp = create_surface(new_bg_surf)
@@ -307,7 +338,6 @@ def insert_imageBitwiseNot(file: Surface | Image.Image,
     if type(lower_target) == list or type(lower_target) == tuple:
         lower_target = np.array(lower_target)
         upper_target = np.array(upper_target)
-
     rgb = cv2.cvtColor(_temp, cv2.COLOR_BGR2RGB)
     mask = cv2.inRange(rgb, lower_target, upper_target)
     new_rgb = cv2.bitwise_not(rgb, rgb, mask=mask)
@@ -373,6 +403,7 @@ def insert_image_in_mask(file: Surface | Image.Image,
     _temp = create_surface(file)
     if new_bg_surf:
         bg_temp = create_surface(new_bg_surf)
+        print(_temp.size, bg_temp.size)
         if _temp.size < bg_temp.size:
             
             _temp = Image.open(file).convert()
@@ -391,7 +422,7 @@ def insert_image_in_mask(file: Surface | Image.Image,
         pass
     else:
         new_bg = cv2.bitwise_and(new_bg, new_bg, mask=mask)
-        new_rgb = cv2.add(new_bg,rgb-new_rgb)
+        new_rgb = cv2.add(new_bg,rgb - new_rgb)
     return Image.fromarray(new_rgb).transpose(Image.Transpose.TRANSPOSE)
 
 
@@ -403,28 +434,26 @@ def insert_imageBitwiseAnd(file: Surface | Image.Image,
                         )->Image.Image:
     
     _temp = create_surface(file)
-
     if new_bg_surf:
         bg_temp = create_surface(new_bg_surf)
         if _temp.size < bg_temp.size:
-            
             _temp = Image.open(file).convert()
             bg_temp = Image.open(new_bg_surf).convert()
             bg_temp = bg_temp.resize(_temp.size)
             _temp = create_surface(_temp)
             bg_temp = create_surface(bg_temp)
-
         new_bg = cv2.cvtColor(bg_temp, cv2.COLOR_BGR2RGB)
-    
     if type(lower_target) == list or type(lower_target) == tuple:
         lower_target = np.array(lower_target)
         upper_target = np.array(upper_target)
-
     rgb = cv2.cvtColor(_temp, cv2.COLOR_BGR2RGB)
     mask = cv2.inRange(rgb, lower_target, upper_target)
-    #unmas = cv2.bitwise_not(mask)
-    new_rgb = cv2.bitwise_not(rgb, rgb, mask=mask) if not new_bg_surf else cv2.bitwise_and(rgb, new_bg, mask=mask)
-    #remove_range_colorBitwiseNot(file, lower_target, upper_target, True, mask).save("novo.png")
+    new_rgb = cv2.bitwise_not(rgb,mask, mask=mask)
+    if not new_bg_surf:
+        pass
+    else:
+        new_bg = cv2.bitwise_and(new_bg, rgb, mask=mask)
+        new_rgb = cv2.add(new_rgb, new_bg)
     return Image.fromarray(new_rgb).transpose(Image.Transpose.TRANSPOSE)
 
 
@@ -445,25 +474,7 @@ def make_image_from_fontsHASH(file,
             with argument and some parameters to return a PIL.Image
             overwrite the pixels in range color between lower and
             upper target. 
-            # Parameters
-            
-            \n\t( 
-            - font_family: str, default="lucidaconsole".
-            \n
-            - font_size: int, default=12. 
-            \n
-            - font_color: tuple, default=(255,255,255).
-            \n
-            - lower_target: list, default=numpy.array([0,0,0]).
-            \n
-            - upper_target: list, default=numpy.array([45,45,45]).
-            \n
-            - text: str, default="10".
-            \n
-            - remove_bg: bool, default=False.
-            \n
-            - new_bg_color: tuple = (0,0,0).
-            \n\t)->PIL.Image.Image'''
+    '''
     
     global PIXEL_READ_COUNTER, PIXEL_READ_DICT, FRAMES_LENGTH_VIDEO_INFO
     PIXEL_READ_DICT = PIXEL_READ_DICT
@@ -557,9 +568,11 @@ def main(file_dict: dict):
         pass
 
 if __name__ == "__main__":
- 
-    insert_imageMaskWithMask('out/mapa_.png', [200,200,200], [255,255,255], new_bg_surf='out/gato_stealth.jpg').save("out/new_file.jpg")
-    #glitchImageMask('out/mapa_.png', [200,200,200], [255,255,255], new_bg_surf='out/gato_stealth.jpg').save("out/new_file.jpg")
+    # 'out/gato_stealth.jpg'
+    
+    new_f = Image.fromarray(return_alpha_image('out/eduardo_luz.jpg'), mode="RGBA").transpose(Image.Transpose.TRANSPOSE)
+    insert_imageInCoord(new_f, 'out/gato_stealth.jpg', (400,900)).save("out/new_file1.png")
+   
     _file_ = None
     try:
         __ = argv[1]
