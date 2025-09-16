@@ -49,7 +49,7 @@ def return_file_() -> dict:
     # ⬊ ☞
     #_["path"] = input("Path to find files/or file.mp4 ☞\t")
     #print(_["path"][:-3]) 
-    return _ 
+    return '!'
 
 
 def cmdline_verify(array: list) -> dict:
