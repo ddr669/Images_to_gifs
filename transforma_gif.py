@@ -109,7 +109,7 @@ class WithPygame:
         if DEBUG_INFO:
             print(f"[VideoReader with open-cv2]: time elapsed -> {tempo_de_exec}")
 
-    def make_video_from_video(
+    def make_video_from_video_blitText(
                             file,
                             out: str = "video_as_mp4.mp4",
                             frame_counter: int = None,
@@ -120,12 +120,12 @@ class WithPygame:
                             start_clip: int = None,
                             end_clip: int = None,
                             remove_bg: bool = False,
-                            new_bg_color: tuple = (),
-                            ) -> int:
+                            new_bg_color: tuple = None,
+                            ):
         '''
-        Takes a file and make another using <code>cv2.VideoCapture()</code> ND moviepy and passing through
-        editing az asked in <code>make_image_from_font()</code> until frames equals frame_counter or video_size
-        nd save az <code>mp4|AMV|avi</code> file format.
+        Takes a file and make another using cv2.VideoCapture() ND moviepy and passing through
+        editing az asked in make_image_from_font() until frames equals frame_counter or video_size
+        nd save az mp4|AMV|avi file format.
         '''
         global FRAMES_LENGTH_VIDEO_INFO
         global DEBUG_INFO, FRAME_TO_SKIP
@@ -204,8 +204,7 @@ class WithPygame:
             if counter >= frame_counter:
                 break
         cap.release() 
-        if DEBUG_INFO:
-            print("[!done load array in heap]")
+    
         if type(FRAMES) == dict:
             frames = [np.array(_) for _ in FRAMES.values()]
         else:
@@ -222,6 +221,14 @@ class WithPygame:
         del(FRAMES, scene, frames, audioclip, cap, counter, sub_counter)
         return 0
     def return_surface(size, background_image: Sprites_ = None) -> Surface:
+        '''
+        Using pygame to return a surface with a Sprite loaded in background.
+        Args:
+            size: tuple | list,
+            background_image: Sprites_ = None
+        Return:
+            pygame.Surface
+        '''
         surf =  Surface(size, SRCALPHA)
         sprite_group = Group()
         surf.fill((0,0,0,0))
@@ -240,6 +247,18 @@ class WithPygame:
                         font_familly: str = 'Consola',
                         font_color: tuple | list = [0,0,0],
                         coord: list | tuple = [0,0])->Surface:
+        '''
+        Using pygame to blit text in coords
+        Args:
+            surface (pygame.Surface): pygame surface.
+            text (str) = 'Hello,World!': text to blit.
+            font_size (int) = 12: font size.
+            font_familly (str) = 'Consola': font familly.
+            font_color ( tuple | list ) = [0,0,0]: font color.
+            coord ( list | tuple ) = [0,0]: coordinate to blit text in image.
+        Return:
+            pygame.Surface
+        '''
         _font = font.SysFont(font_familly, font_size)
         text_inplace = _font.render(text, True, font_color)
         surface.blit(text_inplace, coord)
@@ -257,11 +276,11 @@ class WithPygame:
                             frame_count: int = None,
                             reduce: int = None)->Image.Image:
         
-        '''*make_image_from_fonts
+        '''
                 Takes a file object or PIL.Image object 
                 with argument and some parameters to return a PIL.Image
                 overwrite the pixels in range color between lower and
-                upper target. 
+                upper target. ( DEPRECATE ) 
         '''
         
         global PIXEL_READ_COUNTER, PIXEL_READ_DICT, FRAMES_LENGTH_VIDEO_INFO
@@ -348,13 +367,23 @@ class WithPygame:
         return view
 
     def create_surface(file: str | Image.Image | Surface, size: list | tuple = None) -> list[np.ndarray,str]:
+        '''
+        Take a file like str | Image.Image or Surface and return a array
+        like list[surface: np.ndarray, mode: str] 
+        Mode is if the image is RGB or RGBA
+        Args:
+            file: str | PIL.Image.Image | pygame.Surface,
+            size: list | tuple = None
+
+        Return:
+            list[np.ndarray, str]: list[0] -> Image array, list[1] -> Image mode.
+
+        '''
         sprite_group = Group()
-        
         if type(file) == Surface:
             file = Image.fromarray(surfarray.array3d(file))
         if type(file) == str:
             file = Image.open(file).convert()
-        
         if size:
             file.resize(size)
         _img = Sprites_(_file=file)
@@ -362,7 +391,6 @@ class WithPygame:
         if mode == 'RGBA':
             file_ = np.array(file)
             _temp = cv2.cvtColor(file_, cv2.COLOR_RGBA2BGRA)
-
         else:
             sprite_group.add(_img)
             size = _img.image.get_rect()[2:]
@@ -372,6 +400,8 @@ class WithPygame:
             del _img, sprite_group, size, arraysurf
         del file
         return _temp, mode
+
+
     def draw_function_font_and_filepaste(file,
                         over_file = None,
                         coord: list = [0,0],
@@ -386,7 +416,6 @@ class WithPygame:
                 direction = 1
                 # down
         
-            #print(coord)
             if coord[0] <= 0 and direction == 1:
                 direction = 0
             if coord[1] <= 0 and direction == 1:
@@ -442,25 +471,57 @@ class WithPygame:
 
 def create_mask(file: Surface | Image.Image,
                 lower_target: np.array = np.array([0,0,0]),
-                upper_target: np.array = np.array([0,0,0])
+                upper_target: np.array = np.array([11,11,11])
                 ) -> cv2.Mat:
+    ''' 
+    Using cv2 to select a mask inRange
+    from a image file or frame.
+    Args:
+        file (PIL.Image.Image | str | cv2.Mat): File Image.
+        lower_target (np.array) = np.array([0,0,0]): lower color range.
+        upper_target (np.array) = np.array([11,11,11]): upper color range.
+    Return:
+        cv2.Mat: Image array like.
+    '''
     file_, mode_ = WithPygame.create_surface(file)
     mask = cv2.inRange(file_, lower_target, upper_target)
     del file_, mode_, lower_target, upper_target, file
+
     return mask
 
-def return_alpha_image_bgr(file: str) -> cv2.Mat:
+
+def return_alpha_image_bgra(file: str) -> cv2.Mat:
+    '''
+    Using cv2 to read a file | cv2.Mat and 
+    return a array cv2.Mat BGRA mode
+    if Image dont have alpha channel, convert it using
+    cv2.cvtColor.
+    Args:
+        file ( str | cv2.Mat ): File Image.
+    Return:
+        cv2.Mat: Image array like.
+    '''
     img_with_alpha = return_array(file)
     try:
         b, g, r, alpha = cv2.split(img_with_alpha)
     except ValueError:
         new_ = cv2.cvtColor(img_with_alpha, cv2.COLOR_BGR2BGRA)
         b, g, r, alpha = cv2.split(new_)
-    
     new_array = cv2.merge([b,g,r,alpha])
+
     return new_array
 
-def return_alpha_image_rgb(file: str) -> cv2.Mat:
+def return_alpha_image_rgba(file: str) -> cv2.Mat:
+    '''
+    Using cv2 to read a file | cv2.Mat and 
+    return a array cv2.Mat RGBA mode
+    if Image dont have alpha channel, convert it using
+    cv2.cvtColor.
+    Args:
+        file ( str | cv2.Mat ): File Image.
+    Return:
+        cv2.Mat: Image array like.
+    '''
     img_with_alpha = return_array(file)
     try:
         r, g, b, alpha = cv2.split(img_with_alpha)
@@ -475,6 +536,11 @@ def remove_range_color_alpha(file: Surface | Image.Image,
                         lower_target: list = np.array([0,0,0,255]),
                         upper_target: list = np.array([45,45,45,255]),
                         )->Image.Image:
+    '''
+    Remove range color and return 
+
+
+    '''
     _temp = return_alpha_image_bgr(file)
     if type(lower_target) == list or type(lower_target) == tuple:
         lower_target = np.array(lower_target)
@@ -536,7 +602,7 @@ def glitchImageMask(file: Surface | Image.Image,
             upper_targe ( list | numpy.array ): upper color range to pick.
             new_bg_surf ( pygame.Surface | PIL.Image.Image ): file to insert.
         Returns:
-            PIL.Image.Image: Image 
+            PIL.Image.Image 
     """
     _temp, mode_tmp = WithPygame.create_surface(file)
     if new_bg_surf:
@@ -641,6 +707,8 @@ def insert_imageBitwiseAnd(file: Surface | Image.Image,
         new_bg = cv2.bitwise_and(new_bg, rgb, mask=mask)
         new_rgb = cv2.add(new_rgb, new_bg)
     return Image.fromarray(new_rgb).transpose(Image.Transpose.TRANSPOSE)
+
+
 def return_array(file: str):
     return cv2.imread(file, cv2.IMREAD_UNCHANGED)
    
@@ -686,10 +754,10 @@ def main(file_dict: dict):
 if __name__ == "__main__":
     #remove_range_color_alpha('out/new_file_alpha.png', [0,0,0,255], [10,10,10,255]).save('out/removido.png')
     #insert_imageInCoord('out/eduardo_luz.jpg', 'out/removido.png', [950,400]).save('out/new_file2.png')
-    Image.open('out/eduardo_luz.jpg').convert('RGB').resize([1200, 900]).save('out/resize_img.jpg')
-    Image.open('out/removido.png').convert('RGBA').resize([400, 180]).save("out/gato_reduzido.png")
+    #Image.open('out/eduardo_luz.jpg').convert('RGB').resize([1200, 900]).save('out/resize_img.jpg')
+    #Image.open('out/removido.png').convert('RGBA').resize([400, 180]).save("out/gato_reduzido.png")
     
-    make_gif_with_img_func('out/resize_img.jpg', 'out/porfavor_funfa.gif', 'out/gato_reduzido.png', [0,0,0,0], WithPygame.draw_function_font_and_filepaste, 90, [25,20], True, entropy=24, stroke=10)
+    #make_gif_with_img_func('out/resize_img.jpg', 'out/porfavor_funfa.gif', 'out/gato_reduzido.png', [0,0,0,0], WithPygame.draw_function_font_and_filepaste, 90, [25,20], True, entropy=24, stroke=10)
 
     _file_ = None
     try:
