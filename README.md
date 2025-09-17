@@ -8,9 +8,9 @@
 
 <div align="center">
 
-| exemple1 | exemple2 |
+| all edits func | remove color range and apply alpha |
 | :---: | :---: |
-| ![glitch_cat_test](out/catglitchXD.gif) | @ |
+| ![glitch_cat_test](out/catglitchXD.gif) | ![alpha_background_cat_war](out/gato_reduzido.png) |
 
 </div>
 
@@ -18,18 +18,27 @@
 
 <br>
 
-### cmdline_verify 
-Read the argv and run the script like a ffmpeg or normal `CLI`.  
-.
-.
-#### some options:  
-### make_img_from_font. 
+
+
+# some options:   
    
    
-### background_remove scheme
+### Remove range color.  
 
-coming soon.  
 
-> L-channel: brightness.<br>
-> A-channel: variation between red and green.<br>
-> B-channel: variation between yellow and blue.<br>
+### Apply alpha.  
+
+
+### Paste Image in another.  
+
+
+### Glitch effect.  
+
+
+### Video Make.  
+
+
+### Create Gif from image or Video.  
+
+    #### Draw function.  
+  
