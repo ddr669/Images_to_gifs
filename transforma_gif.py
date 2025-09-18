@@ -108,7 +108,6 @@ class WithPygame:
         tempo_de_exec = now_time - init_time
         if DEBUG_INFO:
             print(f"[VideoReader with open-cv2]: time elapsed -> {tempo_de_exec}")
-
     def make_video_from_video_blitText(
                             file,
                             out: str = "video_as_mp4.mp4",
@@ -226,7 +225,7 @@ class WithPygame:
         Args:
             size: tuple | list,
             background_image: Sprites_ = None
-        Return:
+        Returns:
             pygame.Surface
         '''
         surf =  Surface(size, SRCALPHA)
@@ -251,12 +250,12 @@ class WithPygame:
         Using pygame to blit text in coords
         Args:
             surface (pygame.Surface): pygame surface.
-            text (str) = 'Hello,World!': text to blit.
+            text (str) = "Hello,World!": text to blit.
             font_size (int) = 12: font size.
             font_familly (str) = 'Consola': font familly.
             font_color ( tuple | list ) = [0,0,0]: font color.
             coord ( list | tuple ) = [0,0]: coordinate to blit text in image.
-        Return:
+        Returns:
             pygame.Surface
         '''
         _font = font.SysFont(font_familly, font_size)
@@ -365,17 +364,15 @@ class WithPygame:
         del(sprite_group)
         del(_img, arraysurf, font_pygame, texto, _tmp, imagem_com_texto, x, chars_, hashmap)
         return view
-
     def create_surface(file: str | Image.Image | Surface, size: list | tuple = None) -> list[np.ndarray,str]:
         '''
         Take a file like str | Image.Image or Surface and return a array
         like list[surface: np.ndarray, mode: str] 
         Mode is if the image is RGB or RGBA
         Args:
-            file: str | PIL.Image.Image | pygame.Surface,
-            size: list | tuple = None
-
-        Return:
+            file ( str | PIL.Image.Image | pygame.Surface): Image file.
+            size ( list | tuple ) = None: Surface size.
+        Returns:
             list[np.ndarray, str]: list[0] -> Image array, list[1] -> Image mode.
 
         '''
@@ -400,8 +397,6 @@ class WithPygame:
             del _img, sprite_group, size, arraysurf
         del file
         return _temp, mode
-
-
     def draw_function_font_and_filepaste(file,
                         over_file = None,
                         coord: list = [0,0],
@@ -466,9 +461,7 @@ class WithPygame:
             del aimeudeu, aimeudeu2, spt_sheet, new_bg_file, coord, tmp_file_size, text_file, text_file2
             return new_file
     
-
-
-
+    
 def create_mask(file: Surface | Image.Image,
                 lower_target: np.array = np.array([0,0,0]),
                 upper_target: np.array = np.array([11,11,11])
@@ -480,7 +473,7 @@ def create_mask(file: Surface | Image.Image,
         file (PIL.Image.Image | str | cv2.Mat): File Image.
         lower_target (np.array) = np.array([0,0,0]): lower color range.
         upper_target (np.array) = np.array([11,11,11]): upper color range.
-    Return:
+    Returns:
         cv2.Mat: Image array like.
     '''
     file_, mode_ = WithPygame.create_surface(file)
@@ -498,7 +491,7 @@ def return_alpha_image_bgra(file: str) -> cv2.Mat:
     cv2.cvtColor.
     Args:
         file ( str | cv2.Mat ): File Image.
-    Return:
+    Returns:
         cv2.Mat: Image array like.
     '''
     img_with_alpha = return_array(file)
@@ -519,7 +512,7 @@ def return_alpha_image_rgba(file: str) -> cv2.Mat:
     cv2.cvtColor.
     Args:
         file ( str | cv2.Mat ): File Image.
-    Return:
+    Returns:
         cv2.Mat: Image array like.
     '''
     img_with_alpha = return_array(file)
@@ -541,7 +534,7 @@ def remove_range_color_alpha(file: Surface | Image.Image,
 
 
     '''
-    _temp = return_alpha_image_bgr(file)
+    _temp = return_alpha_image_bgra(file)
     if type(lower_target) == list or type(lower_target) == tuple:
         lower_target = np.array(lower_target)
         upper_target = np.array(upper_target)
@@ -551,8 +544,8 @@ def remove_range_color_alpha(file: Surface | Image.Image,
     return Image.fromarray(new_rgb, 'RGBA')
 
 def insert_imageInCoord(file, over_file, coord: list | tuple = [0,0]) -> Image.Image:
-    new_file = return_alpha_image_rgb(over_file)
-    tmp_ = return_alpha_image_rgb(file)
+    new_file = return_alpha_image_rgba(over_file)
+    tmp_ = return_alpha_image_rgba(file)
     new_file_pil = Image.fromarray(new_file, 'RGBA')
     mask = new_file_pil.split()[3]
     tmp_pil = Image.fromarray(tmp_, 'RGBA')
