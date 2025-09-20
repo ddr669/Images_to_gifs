@@ -507,8 +507,13 @@ def sanitize_ranges(lower_target: list | tuple,upper_target: list | tuple)->list
         upper_target = np.array(upper_target)
     return lower_target, upper_target
 
-
-
+def draw_line_image(image_file: Image.Image,
+                    coords: list[tuple],
+                    color: tuple = (255,255,255),
+                    width: int = 2) -> Image.Image:
+    draw_f = ImageDraw.Draw(image_file)
+    draw_f.line(coords, fill=color, width=width)
+    return image_file
 
 def simple_memeGen(file_image: Image.Image | cv2.Mat,
                    text: str = "Me when",
@@ -516,20 +521,96 @@ def simple_memeGen(file_image: Image.Image | cv2.Mat,
                    font_familly: str = 'Times New Roman',
                    font_color: tuple = (0,0,0),
                    font_size: int = 28,
-                   txt_pos: tuple = (10,10),
+                   txt_pos: tuple = (0,0),
                    **kwargs)-> Image.Image:
-    array_img = return_array(file_image)
+    
     bg_color = tuple(bg_color)
     font_color = tuple(font_color)
     diff = int(file_image.size[1] / 4)
     bg_image = Image.new('RGB',(file_image.size[0], file_image.size[1]+diff), bg_color)
     draw_f = ImageDraw.Draw(bg_image)
-    font_path = str(f"c:\WINDOWS\Fonts\TIMESI.TTF")
+    font_path = str(f"c:\WINDOWS\Fonts\IMPACT.TTF") # IMPACT REGULAR
     font_f = ImageFont.truetype(font_path, size=font_size)
     draw_f.text(tuple(txt_pos), fill=font_color, font=font_f, text=text)
     bg_image.paste(file_image, (0, 0+diff))
     return bg_image
     #c:\WINDOWS\Fonts\TIMES.TTF c:\WINDOWS\Fonts\TIMESBD.TTF c:\WINDOWS\Fonts\TIMESBI.TTF 
+
+def simple_memeHowGen(file_image: Image.Image | cv2.Mat,
+                      text: str = "How",
+                      bg_color: tuple = (0,0,0),
+                      font_color: tuple = (255,255,255),
+                      font_size: int = 28,
+                      txt_pos: tuple | None = None) -> Image.Image:
+    
+    new_file = file_image.reduce(2)
+    bg_color = tuple(bg_color)
+    font_color = tuple(font_color)
+    
+    diffy = int(new_file.size[1] / 4)
+    text_y = int(diffy + (diffy /2))
+    diffx = int(new_file.size[0] / 2 )
+    center_x = file_image.size[0] / 2
+    center_y = file_image.size[1] / 2
+    if not txt_pos:
+        txt_pos = (center_x - len(text) * 2, center_y+ text_y)
+
+    bg_image = Image.new('RGB', (file_image.size[0], file_image.size[1]), bg_color)
+    draw_f = ImageDraw.Draw(bg_image)
+    font_path = str("c:\WINDOWS\Fonts\CHARLEMAGNESTD-BOLD.OTF") 
+    font_f = ImageFont.truetype(font_path, size=font_size)
+    draw_f.text(txt_pos, fill=font_color, font=font_f, text=text)
+
+    bg_image.paste(new_file, (diffx+1, diffy+1))
+    diffx = diffx - 4
+    diffy = diffy - 4
+    square_sizex = new_file.size[0] + 8
+    square_sizey = new_file.size[1] + 8
+    left = [(diffx, diffy), (diffx, diffy+square_sizey)]
+    right = [(diffx+square_sizex, diffy), (diffx+square_sizex, diffy+square_sizey)]
+    top =  [(diffx, diffy), (diffx+square_sizex, diffy)]
+    down = [(diffx, square_sizey+diffy), (square_sizex+diffx, square_sizey+diffy)]
+
+    coords = [left, right, top, down]
+    for _ in coords:
+        bg_image = draw_line_image(bg_image, _)
+
+
+    return bg_image
+
+def recursion_memeHowAuto(file_image: Image.Image | cv2.Mat,
+                          text: list | str = ['How', '???', 'No way'],
+                          new_filename: str = "out/new_file_recursion_meme.gif",
+                          frame_count: int = 90,
+                          interval: int = 20):
+    interval_counter = 0
+    frames = []
+    if DEBUG_INFO:
+        first_ini_time = time_now()
+        print(f"{GREEN_COLOR}[Ini recursion_memeHowAuto]{DEFAULT_COLOR}")
+
+    junk_number = 0
+    actual_text = text[0]
+    for _ in range(0, frame_count):
+        if DEBUG_INFO:
+            #print(f"{RED_COLOR}[Loading frame{a} in RAM]{DEFAULT_COLOR}")
+            ini_time = time_now()
+        frames.append(simple_memeHowGen(file_image, text=actual_text))
+        interval_counter += 1
+        if interval_counter == interval:
+            interval_counter = 0
+            junk_number =  junk_number + 1 if junk_number < len(text)-1 else 0
+            actual_text = text[junk_number]
+            file_image = frames[_]
+
+        if DEBUG_INFO:
+            print(f"{GREEN_COLOR}[Load Image on memory]{DEFAULT_COLOR} time:{time_now() - ini_time}")
+
+    frame0 = frames[0]
+    frame0.save(new_filename, format="GIF", save_all=True, append_images=frames, duration=frame_count, loop=0)
+    if DEBUG_INFO:
+        print(f"{GREEN_COLOR}[Process terminated]{DEFAULT_COLOR} time:{time_now() - first_ini_time}")
+
 def create_mask(file: Surface | Image.Image,
                 lower_target: np.array = np.array([0,0,0]),
                 upper_target: np.array = np.array([11,11,11])
@@ -746,7 +827,7 @@ def make_gif_with_img_func(file,file_name: str = 'out/new_file.gif',
             #print(f"{RED_COLOR}[Loading frame{a} in RAM]{DEFAULT_COLOR}")
             ini_time = time_now()
         if function_draw:
-            new_file = function_draw(file)
+            new_file = function_draw(file, text=kwargs.get('text'))
             #new_file = function_draw(file,
             #                         over_img,
             #                         coord,
@@ -791,10 +872,11 @@ def main(file_dict: dict):
         pass
 
 if __name__ == "__main__":
-    img_de_fundo = Image.open('out/resize_img.jpg').resize([400,200])
-    gato_ = Image.open('out/gato_reduzido.png').resize([100, 80])
-    
-    make_gif_with_img_func(img_de_fundo, 'out/simple_memeGen.gif',gato_ , [0,0,0,0], simple_memeGen, 90, [5,0], True,rotate=1,entropy=1, stroke=1)
+    img_de_fundo = Image.open('out/resize_img.jpg')
+    gato_ = Image.open('out/gato_reduzido.png')
+    recursion_memeHowAuto(img_de_fundo, ['como', 'quando', 'aonde', 'de q maneira', '???'], frame_count=90, interval=5)
+    input()
+    #make_gif_with_img_func(img_de_fundo, 'out/simple_memeGen.gif',gato_ , [0,0,0,0], simple_memeHowGen, 90, [5,0], True,text="Como?")
 
     _file_ = None
     try:
