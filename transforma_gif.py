@@ -2,10 +2,11 @@
 #-*-encode: utf-8-*-
 #-*-By:__DDr669__-*-
 #-*-Date:__/__/__-*-
-from PIL import Image
+from PIL import Image, PngImagePlugin, JpegImagePlugin, ImageDraw, ImageFont
 import cv2
 import numpy as np
 from sys import argv
+import pickle
 from pygame import Surface, surfarray, SRCALPHA, font, draw, Rect, image
 from pygame.transform import scale
 from pygame.sprite import Sprite, Group
@@ -397,7 +398,7 @@ class WithPygame:
             del _img, sprite_group, size, arraysurf
         del file
         return _temp, mode
-    def draw_function_font_and_filepaste(file,
+    def draw_function_font_and_filepaste(file: Image.Image,
                         over_file = None,
                         coord: list = [0,0],
                         tmp_file_size: list = [1024, 900],
@@ -405,28 +406,36 @@ class WithPygame:
                         direction: int = 0,
                         func = None, **kwargs) -> Image.Image:
 
-            if coord[0] >= tmp_file_size[0]:
-                direction = 1
-            if coord[1] >= tmp_file_size[1]:
-                direction = 1
+            
                 # down
-        
-            if coord[0] <= 0 and direction == 1:
+            over_file = Image.open(over_file) if type(over_file) == str else over_file
+            if kwargs.get('rotate'):
+                    
+                    over_file = over_file.rotate(kwargs.get('rotate'))
+                    #over_file = return_array(over_file)
+           
+            if coord[0] >= tmp_file_size[0]:
                 direction = 0
-            if coord[1] <= 0 and direction == 1:
+            elif coord[0] <= 0 and direction == 0:
+                direction = 1
+            elif coord[1] >= tmp_file_size[1]:
                 direction = 0
+            elif coord[1] <= 0 and direction == 0:
+                direction = 1
+                
             if direction == 1:
-                coord[0] -= speed[0]
-                coord[1] -= speed[1]
-                new_file = insert_imageInCoord(file, over_file, coord[:2])
-            else:
                 coord[0] += speed[0]
                 coord[1] += speed[1]
+                
+                new_file = insert_imageInCoord(file, over_file, coord[:2])
+            else:
+                coord[0] -= speed[0]
+                coord[1] -= speed[1]
                 new_file = insert_imageInCoord(file, over_file, coord[:2])
 
             if func:
 
-                new_bg_file = Image.open(over_file).resize(tmp_file_size)
+                new_bg_file = over_file.resize(tmp_file_size)
                 if kwargs.get('entropy'):
                     
                     if int(kwargs.get('framec')) % int(kwargs.get('entropy')) == 0:
@@ -434,8 +443,9 @@ class WithPygame:
                 
                 if kwargs.get('stroke'):
                     stroke = kwargs.get('stroke')
-                else:
-                    stroke = None
+                
+                #if kwargs.get('rotate'):
+                #    new_file = new_file.rotate(kwargs.get('rotate')) if type(kwargs.get('rotate')) == int else 0
 
                 spt_sheet = Sprites_(new_file)
                 if stroke:
@@ -460,36 +470,100 @@ class WithPygame:
                     
             del aimeudeu, aimeudeu2, spt_sheet, new_bg_file, coord, tmp_file_size, text_file, text_file2
             return new_file
+    def insert_imageBitwiseAnd(file: Surface | Image.Image,
+                            lower_target: list = np.array([0,0,0]),
+                            upper_target: list = np.array([45,45,45]),
+                            remove_bg: bool = True,
+                            new_bg_surf: Surface | Image.Image = None
+                            )->Image.Image:
+        
+        _temp = WithPygame.create_surface(file)
+        if new_bg_surf:
+            bg_temp = WithPygame.create_surface(new_bg_surf)
+            if _temp.size < bg_temp.size:
+                _temp = Image.open(file).convert()
+                bg_temp = Image.open(new_bg_surf).convert()
+                bg_temp = bg_temp.resize(_temp.size)
+                _temp = WithPygame.create_surface(_temp)
+                bg_temp = WithPygame.create_surface(bg_temp)
+            new_bg = cv2.cvtColor(bg_temp, cv2.COLOR_BGR2RGB)
+        if type(lower_target) == list or type(lower_target) == tuple:
+            lower_target = np.array(lower_target)
+            upper_target = np.array(upper_target)
+        rgb = cv2.cvtColor(_temp, cv2.COLOR_BGR2RGB)
+        mask = cv2.inRange(rgb, lower_target, upper_target)
+        new_rgb = cv2.bitwise_not(rgb,mask, mask=mask)
+        if not new_bg_surf:
+            pass
+        else:
+            new_bg = cv2.bitwise_and(new_bg, rgb, mask=mask)
+            new_rgb = cv2.add(new_rgb, new_bg)
+        return Image.fromarray(new_rgb).transpose(Image.Transpose.TRANSPOSE)   
     
-    
+
+def sanitize_ranges(lower_target: list | tuple,upper_target: list | tuple)->list[np.array,np.array]:
+    if type(lower_target) == list or type(lower_target) == tuple:
+        lower_target = np.array(lower_target)
+        upper_target = np.array(upper_target)
+    return lower_target, upper_target
+
+
+
+
+def simple_memeGen(file_image: Image.Image | cv2.Mat,
+                   text: str = "Me when",
+                   bg_color: tuple = (255,255,255),
+                   font_familly: str = 'Times New Roman',
+                   font_color: tuple = (0,0,0),
+                   font_size: int = 28,
+                   txt_pos: tuple = (10,10),
+                   **kwargs)-> Image.Image:
+    array_img = return_array(file_image)
+    bg_color = tuple(bg_color)
+    font_color = tuple(font_color)
+    diff = int(file_image.size[1] / 4)
+    bg_image = Image.new('RGB',(file_image.size[0], file_image.size[1]+diff), bg_color)
+    draw_f = ImageDraw.Draw(bg_image)
+    font_path = str(f"c:\WINDOWS\Fonts\TIMESI.TTF")
+    font_f = ImageFont.truetype(font_path, size=font_size)
+    draw_f.text(tuple(txt_pos), fill=font_color, font=font_f, text=text)
+    bg_image.paste(file_image, (0, 0+diff))
+    return bg_image
+    #c:\WINDOWS\Fonts\TIMES.TTF c:\WINDOWS\Fonts\TIMESBD.TTF c:\WINDOWS\Fonts\TIMESBI.TTF 
 def create_mask(file: Surface | Image.Image,
                 lower_target: np.array = np.array([0,0,0]),
                 upper_target: np.array = np.array([11,11,11])
                 ) -> cv2.Mat:
     ''' 
-    Using cv2 to select a mask inRange
-    from a image file or frame.
-    Args:
+    Using cv2 to select a mask inRange  
+    from a image file or frame.  
+
+    Parameters
+    ----------
         file (PIL.Image.Image | str | cv2.Mat): File Image.
         lower_target (np.array) = np.array([0,0,0]): lower color range.
         upper_target (np.array) = np.array([11,11,11]): upper color range.
     Returns:
-        cv2.Mat: Image array like.
+        cv2.Mat: Image array like
     '''
-    file_, mode_ = WithPygame.create_surface(file)
+    file_ = return_array(file)
+    lower_target, upper_target = sanitize_ranges(lower_target, upper_target)
     mask = cv2.inRange(file_, lower_target, upper_target)
-    del file_, mode_, lower_target, upper_target, file
-
+    del file_, lower_target, upper_target, file
     return mask
 
+def return_image_from_array(array: cv2.Mat | np.ndarray) -> Image.Image:
+    return Image.fromarray(array)
 
 def return_alpha_image_bgra(file: str) -> cv2.Mat:
     '''
-    Using cv2 to read a file | cv2.Mat and 
-    return a array cv2.Mat BGRA mode
-    if Image dont have alpha channel, convert it using
-    cv2.cvtColor.
-    Args:
+    Using cv2 to read a file | cv2.Mat and   
+    return a array cv2.Mat BGRA mode  
+    if Image dont have alpha channel, convert it using  
+    cv2.cvtColor.  
+
+    Parameters
+    ----------
         file ( str | cv2.Mat ): File Image.
     Returns:
         cv2.Mat: Image array like.
@@ -501,19 +575,20 @@ def return_alpha_image_bgra(file: str) -> cv2.Mat:
         new_ = cv2.cvtColor(img_with_alpha, cv2.COLOR_BGR2BGRA)
         b, g, r, alpha = cv2.split(new_)
     new_array = cv2.merge([b,g,r,alpha])
-
     return new_array
 
 def return_alpha_image_rgba(file: str) -> cv2.Mat:
     '''
-    Using cv2 to read a file | cv2.Mat and 
-    return a array cv2.Mat RGBA mode
-    if Image dont have alpha channel, convert it using
-    cv2.cvtColor.
-    Args:
-        file ( str | cv2.Mat ): File Image.
+    Using cv2 to read a file | cv2.Mat and  
+    return a array cv2.Mat RGBA mode  
+    if Image dont have alpha channel, convert it using  
+    cv2.cvtColor.  
+
+    Parameters
+    ----------
+        file ( str | cv2.Mat ): File Image
     Returns:
-        cv2.Mat: Image array like.
+        cv2.Mat: Image array like
     '''
     img_with_alpha = return_array(file)
     try:
@@ -521,7 +596,6 @@ def return_alpha_image_rgba(file: str) -> cv2.Mat:
     except ValueError:
         new_ = cv2.cvtColor(img_with_alpha, cv2.COLOR_BGR2RGBA)
         r, g, b, alpha = cv2.split(new_)
-    
     new_array = cv2.merge([r,g,b,alpha])
     return new_array
 
@@ -535,61 +609,32 @@ def remove_range_color_alpha(file: Surface | Image.Image,
 
     '''
     _temp = return_alpha_image_bgra(file)
-    if type(lower_target) == list or type(lower_target) == tuple:
-        lower_target = np.array(lower_target)
-        upper_target = np.array(upper_target)
+    lower_target, upper_target = sanitize_ranges(lower_target, upper_target)
     rgb = cv2.cvtColor(_temp, cv2.COLOR_BGRA2RGBA)
-    mask = cv2.inRange(rgb, lower_target, upper_target)
+    mask = create_mask(rgb, lower_target, upper_target)
     new_rgb = cv2.bitwise_not(rgb,rgb, mask=mask) 
     return Image.fromarray(new_rgb, 'RGBA')
 
 def insert_imageInCoord(file, over_file, coord: list | tuple = [0,0]) -> Image.Image:
     new_file = return_alpha_image_rgba(over_file)
     tmp_ = return_alpha_image_rgba(file)
-    new_file_pil = Image.fromarray(new_file, 'RGBA')
+    new_file_pil = return_image_from_array(new_file)
     mask = new_file_pil.split()[3]
     tmp_pil = Image.fromarray(tmp_, 'RGBA')
     tmp_pil.paste(new_file_pil, coord, mask=mask)
     del tmp_, mask, new_file_pil, new_file
     return tmp_pil
 
-
-def insert_imageBitwiseNot(file: Surface | Image.Image,
-                        lower_target: list = np.array([0,0,0]),
-                        upper_target: list = np.array([45,45,45]),
-                        remove_bg: bool = True,
-                        new_bg_surf: Surface | Image.Image = None
-                        )->Image.Image:
-    _temp = WithPygame.create_surface(file)
-    if new_bg_surf:
-        bg_temp = WithPygame.create_surface(new_bg_surf)
-        if _temp.size < bg_temp.size:
-            _temp = Image.open(file).convert()
-            bg_temp = Image.open(new_bg_surf).convert()
-            bg_temp = bg_temp.resize(_temp.size)
-            _temp = WithPygame.create_surface(_temp)
-            bg_temp = WithPygame.create_surface(bg_temp)
-        new_bg = cv2.cvtColor(bg_temp, cv2.COLOR_BGR2RGB)
-    if type(lower_target) == list or type(lower_target) == tuple:
-        lower_target = np.array(lower_target)
-        upper_target = np.array(upper_target)
-    rgb = cv2.cvtColor(_temp, cv2.COLOR_BGR2RGB)
-    mask = cv2.inRange(rgb, lower_target, upper_target)
-    new_rgb = cv2.bitwise_not(rgb, rgb, mask=mask)
-    if not new_bg_surf:
-        pass
-    else:
-        new_rgb = cv2.add(new_rgb, cv2.bitwise_not(new_bg,mask, mask=mask))
-    return Image.fromarray(new_rgb).transpose(Image.Transpose.TRANSPOSE)
-
 def glitchImageMask(file: Surface | Image.Image,
-                        lower_target: list = np.array([0,0,0]),
-                        upper_target: list = np.array([45,45,45]),
+                        lower_target: list | tuple | np.ndarray = np.array([0,0,0]),
+                        upper_target: list | tuple | np.ndarray = np.array([45,45,45]),
                         new_bg_surf: Surface | Image.Image = None
                         )->Image.Image:
     """ Make a image with file image or surface, and a
         new_bg image to create a mask to glitch at all.
-        Args:
+
+        Parameters.
+        ----------
             file ( pygame.Surface | PIL.Image.Image ): base file to insert a bg.
             lower_target ( list | numpy.array ): lower color range to pick.
             upper_targe ( list | numpy.array ): upper color range to pick.
@@ -597,37 +642,27 @@ def glitchImageMask(file: Surface | Image.Image,
         Returns:
             PIL.Image.Image 
     """
-    _temp, mode_tmp = WithPygame.create_surface(file)
+    _temp = return_array(file)
     if new_bg_surf:
-        bg_temp, mode_new = WithPygame.create_surface(new_bg_surf)
+        bg_temp = return_array(new_bg_surf)
         if _temp.size < bg_temp.size:
-            _temp = Image.open(file).convert()
-            bg_temp = Image.open(new_bg_surf).convert()
-            bg_temp = bg_temp.resize(_temp.size)
-            _temp, mode_tmp = WithPygame.create_surface(_temp)
-            bg_temp, mode_new = WithPygame.create_surface(bg_temp)
-        if mode_new == 'RGB':
-            new_bg = cv2.cvtColor(bg_temp, cv2.COLOR_BGR2RGB)
-        elif mode_new == 'RGBA':
-            new_bg = cv2.cvtColor(bg_temp, cv2.COLOR_BGRA2RGBA)
+          
+            bg_temp = Image.open(new_bg_surf)
+            bg_temp = bg_temp.resize(Image.fromarray(_temp).size)
+          
+            bg_temp = return_array(bg_temp)
 
-    if mode_tmp == 'RGB':
-         rgb = cv2.cvtColor(_temp, cv2.COLOR_BGR2RGB)
-    elif mode_tmp == 'RGBA':
-        rgb = cv2.cvtColor(_temp, cv2.COLOR_BGRA2RGBA)
-
-    if type(lower_target) == list or type(lower_target) == tuple:
-        lower_target = np.array(lower_target)
-        upper_target = np.array(upper_target)
-   
-    mask = cv2.inRange(rgb, lower_target, upper_target)
-    new_rgb = cv2.bitwise_and(rgb, new_bg, mask=mask)
+    new_bg = bg_temp
+    rgb = _temp
+    lower_target, upper_target = sanitize_ranges(lower_target, upper_target)
+    mask = create_mask(rgb, lower_target, upper_target)
+    new_rgb = cv2.bitwise_and(rgb, new_bg, mask=mask) if new_bg_surf else cv2.bitwise_and(rgb, rgb, mask=mask)
     if not new_bg_surf:
         pass
     else:
         new_bg = cv2.bitwise_and(new_bg, rgb)
         new_rgb = cv2.add(new_rgb, rgb+new_bg)
-    del new_bg, mask, rgb, lower_target, upper_target, bg_temp, mode_new, mode_tmp, _temp
+    del new_bg, mask, rgb, lower_target, upper_target, bg_temp, _temp
     return Image.fromarray(new_rgb).transpose(Image.Transpose.TRANSPOSE)
 
 def insert_image_in_mask(file: Surface | Image.Image,
@@ -637,7 +672,9 @@ def insert_image_in_mask(file: Surface | Image.Image,
                         )->Image.Image:
     """
     Insert a image in another by a mask choose by range color.
-    Args:
+
+    Parameters.
+    ----------
         file ( pygame.Surface | PIL.Image.Image ): base file to insert a bg.
         lower_target ( list | numpy.array ): lower color range to pick.
         upper_targe ( list | numpy.array ): upper color range to pick.
@@ -657,11 +694,10 @@ def insert_image_in_mask(file: Surface | Image.Image,
             _temp = WithPygame.create_surface(_temp)
             bg_temp = WithPygame.create_surface(bg_temp)
         new_bg = cv2.cvtColor(bg_temp, cv2.COLOR_BGR2RGB)
-    if type(lower_target) == list or type(lower_target) == tuple:
-        lower_target = np.array(lower_target)
-        upper_target = np.array(upper_target)
+    
+    lower_target, upper_target = sanitize_ranges(lower_target, upper_target)
     rgb = cv2.cvtColor(_temp, cv2.COLOR_BGR2RGB)
-    mask = cv2.inRange(rgb, lower_target, upper_target)
+    mask = create_mask(rgb, lower_target, upper_target)
     new_rgb = cv2.bitwise_and(rgb, rgb, mask=mask)
     if not new_bg_surf:
         pass
@@ -671,39 +707,18 @@ def insert_image_in_mask(file: Surface | Image.Image,
     return Image.fromarray(new_rgb).transpose(Image.Transpose.TRANSPOSE)
 
 
-def insert_imageBitwiseAnd(file: Surface | Image.Image,
-                        lower_target: list = np.array([0,0,0]),
-                        upper_target: list = np.array([45,45,45]),
-                        remove_bg: bool = True,
-                        new_bg_surf: Surface | Image.Image = None
-                        )->Image.Image:
-    
-    _temp = WithPygame.create_surface(file)
-    if new_bg_surf:
-        bg_temp = WithPygame.create_surface(new_bg_surf)
-        if _temp.size < bg_temp.size:
-            _temp = Image.open(file).convert()
-            bg_temp = Image.open(new_bg_surf).convert()
-            bg_temp = bg_temp.resize(_temp.size)
-            _temp = WithPygame.create_surface(_temp)
-            bg_temp = WithPygame.create_surface(bg_temp)
-        new_bg = cv2.cvtColor(bg_temp, cv2.COLOR_BGR2RGB)
-    if type(lower_target) == list or type(lower_target) == tuple:
-        lower_target = np.array(lower_target)
-        upper_target = np.array(upper_target)
-    rgb = cv2.cvtColor(_temp, cv2.COLOR_BGR2RGB)
-    mask = cv2.inRange(rgb, lower_target, upper_target)
-    new_rgb = cv2.bitwise_not(rgb,mask, mask=mask)
-    if not new_bg_surf:
-        pass
+def return_array(file: str | Image.Image):
+    if type(file) == np.array or type(file) == np.ndarray:
+        return file
+    if type(file) == Image.Image or type(file) == PngImagePlugin.PngImageFile or type(file) == JpegImagePlugin.JpegImageFile:
+        file = np.array(file)
+        try:
+            _ = cv2.cvtColor(file, cv2.COLOR_BGR2BGRA)
+        except cv2.error:
+            _ = cv2.cvtColor(file, cv2.COLOR_BGRA2RGBA)
     else:
-        new_bg = cv2.bitwise_and(new_bg, rgb, mask=mask)
-        new_rgb = cv2.add(new_rgb, new_bg)
-    return Image.fromarray(new_rgb).transpose(Image.Transpose.TRANSPOSE)
-
-
-def return_array(file: str):
-    return cv2.imread(file, cv2.IMREAD_UNCHANGED)
+        _ = cv2.imread(file, cv2.IMREAD_UNCHANGED) 
+    return _
    
 
 
@@ -716,23 +731,54 @@ def make_gif_with_img_func(file,file_name: str = 'out/new_file.gif',
                            effect: bool = False,
                            **kwargs):
     FRAMES = []
-    tmp_file_size = Image.open(file).size
+    if DEBUG_INFO:
+        first_ini_time = time_now()
+        print(f"{GREEN_COLOR}[Ini Make_gif_with_img_func]{DEFAULT_COLOR}")
+
+    try:
+        tmp_file_size = Image.open(file).size
+    except AttributeError:
+        tmp_file_size = file.size
     direction = 0
+    file_tmp_name = []
     for a in range(0, frames_len):
+        if DEBUG_INFO:
+            #print(f"{RED_COLOR}[Loading frame{a} in RAM]{DEFAULT_COLOR}")
+            ini_time = time_now()
         if function_draw:
-            new_file = function_draw(file,
-                                     over_img,
-                                     coord,
-                                     tmp_file_size,
-                                     animation_speed,
-                                     direction,
-                                     effect, entropy=kwargs.get('entropy'), framec=a, stroke=kwargs.get('stroke'))
+            new_file = function_draw(file)
+            #new_file = function_draw(file,
+            #                         over_img,
+            #                         coord,
+            #                         tmp_file_size,
+            #                         animation_speed,
+            #                         direction,
+            #                         effect, entropy=kwargs.get('entropy'), framec=a,rotate=a,stroke=kwargs.get('stroke'))
         else:
-            new_file = function_draw(file, over_img, coord, tmp_file_size, animation_speed, direction, effect)
+            # new_file = function_draw(file, over_img, coord, tmp_file_size, animation_speed, direction, effect) # WithPygame.draw_function_text_nd_glitch
+            new_file = function_draw(file)
+
         FRAMES.append(new_file)
-       
+        # load in HD memory 
+        # slowly !
+        #f_name_tmp = f'tmp/.~tmp_fileimage{randint(0,1666)}'
+        #if f_name_tmp in file_tmp_name:
+        #    f_name_tmp = f'tmp/.~tmp_fileimage{randint(0, 1000)}'
+        
+        #file_tmp_name.append(f_name_tmp)
+        #with open(f_name_tmp, 'wb') as f:
+        #    pickle.dump(new_file, f)
+        if DEBUG_INFO:
+            print(f"{RED_COLOR}[Loading frame{a} in RAM]{DEFAULT_COLOR}time: { time_now() - ini_time}")
+
+    #for a in file_tmp_name:
+    #    with open(a, 'rb') as f:
+    #        FRAMES.append(pickle.load(f))
+        
     frame0 = FRAMES[0]
     frame0.save(file_name, format="GIF", save_all=True, append_images=FRAMES, duration=frames_len, loop=0)
+    if DEBUG_INFO:
+        print(f"{GREEN_COLOR}[Process terminated]{DEFAULT_COLOR} time:{time_now() - first_ini_time}")
     del frame0, tmp_file_size, direction, function_draw, FRAMES
 
 def main(file_dict: dict):
@@ -745,12 +791,10 @@ def main(file_dict: dict):
         pass
 
 if __name__ == "__main__":
-    #remove_range_color_alpha('out/new_file_alpha.png', [0,0,0,255], [10,10,10,255]).save('out/removido.png')
-    #insert_imageInCoord('out/eduardo_luz.jpg', 'out/removido.png', [950,400]).save('out/new_file2.png')
-    #Image.open('out/eduardo_luz.jpg').convert('RGB').resize([1200, 900]).save('out/resize_img.jpg')
-    #Image.open('out/removido.png').convert('RGBA').resize([400, 180]).save("out/gato_reduzido.png")
+    img_de_fundo = Image.open('out/resize_img.jpg').resize([400,200])
+    gato_ = Image.open('out/gato_reduzido.png').resize([100, 80])
     
-    #make_gif_with_img_func('out/resize_img.jpg', 'out/porfavor_funfa.gif', 'out/gato_reduzido.png', [0,0,0,0], WithPygame.draw_function_font_and_filepaste, 90, [25,20], True, entropy=24, stroke=10)
+    make_gif_with_img_func(img_de_fundo, 'out/simple_memeGen.gif',gato_ , [0,0,0,0], simple_memeGen, 90, [5,0], True,rotate=1,entropy=1, stroke=1)
 
     _file_ = None
     try:
