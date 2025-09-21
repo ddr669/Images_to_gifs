@@ -2,24 +2,29 @@
 #-*-encode: utf-8-*-
 #-*-By:__DDr669__-*-
 #-*-Date:__/__/__-*-
+
 from PIL import Image, PngImagePlugin, JpegImagePlugin, ImageDraw, ImageFont
 import cv2
 import numpy as np
 from sys import argv
-import pickle
+
+from src import *
 from pygame import Surface, surfarray, SRCALPHA, font, draw, Rect, image
 from pygame.transform import scale
 from pygame.sprite import Sprite, Group
-from cmdline_verify import cmdline_verify
-from cmdline_verify import __help__, return_file_
+
 from random import randint
 from moviepy import AudioFileClip, ImageSequenceClip
+
 from os import listdir as os_path
 from os.path import exists as path_exist
 from os import getcwd as GETPWD
 from time import time as time_now
-from src.config_variables import * 
+ 
 font.init()
+print("\n\r\n\r") # just to keep the pygame welcome ^^
+
+
 class Sprites_(Sprite):
         def __init__(self, _file: str | Image.Image = None,
                     color=(0,0,0,0),
@@ -529,12 +534,12 @@ def simple_memeGen(file_image: Image.Image | cv2.Mat,
     diff = int(file_image.size[1] / 4)
     bg_image = Image.new('RGB',(file_image.size[0], file_image.size[1]+diff), bg_color)
     draw_f = ImageDraw.Draw(bg_image)
-    font_path = str(f"c:\WINDOWS\Fonts\IMPACT.TTF") # IMPACT REGULAR
+    font_path = str(f"c:\\WINDOWS\\Fonts\\IMPACT.TTF") # IMPACT REGULAR
     font_f = ImageFont.truetype(font_path, size=font_size)
     draw_f.text(tuple(txt_pos), fill=font_color, font=font_f, text=text)
     bg_image.paste(file_image, (0, 0+diff))
     return bg_image
-    #c:\WINDOWS\Fonts\TIMES.TTF c:\WINDOWS\Fonts\TIMESBD.TTF c:\WINDOWS\Fonts\TIMESBI.TTF 
+    # c WINDOWS Fonts TIMES.TTF c WINDOWS Fonts TIMESBD.TTF c WINDOWS Fonts TIMESBI.TTF 
 
 def simple_memeHowGen(file_image: Image.Image | cv2.Mat,
                       text: str = "How",
@@ -557,7 +562,7 @@ def simple_memeHowGen(file_image: Image.Image | cv2.Mat,
 
     bg_image = Image.new('RGB', (file_image.size[0], file_image.size[1]), bg_color)
     draw_f = ImageDraw.Draw(bg_image)
-    font_path = str("c:\WINDOWS\Fonts\CHARLEMAGNESTD-BOLD.OTF") 
+    font_path = str("c:\\WINDOWS\\Fonts\\CHARLEMAGNESTD-BOLD.OTF") 
     font_f = ImageFont.truetype(font_path, size=font_size)
     draw_f.text(txt_pos, fill=font_color, font=font_f, text=text)
 
@@ -582,7 +587,8 @@ def recursion_memeHowAuto(file_image: Image.Image | cv2.Mat,
                           text: list | str = ['How', '???', 'No way'],
                           new_filename: str = "out/new_file_recursion_meme.gif",
                           frame_count: int = 90,
-                          interval: int = 20):
+                          interval: int = 20,
+                          function: None = None, **kwargs):
     interval_counter = 0
     frames = []
     if DEBUG_INFO:
@@ -595,6 +601,8 @@ def recursion_memeHowAuto(file_image: Image.Image | cv2.Mat,
         if DEBUG_INFO:
             #print(f"{RED_COLOR}[Loading frame{a} in RAM]{DEFAULT_COLOR}")
             ini_time = time_now()
+        if function:
+            file_image = function(file_image, _)
         frames.append(simple_memeHowGen(file_image, text=actual_text))
         interval_counter += 1
         if interval_counter == interval:
@@ -864,18 +872,20 @@ def make_gif_with_img_func(file,file_name: str = 'out/new_file.gif',
 
 def main(file_dict: dict):
     if file_dict == "!":
-        __help__()
-        
+        banner_help()
         exit()
-  
     if file_dict["GUI"]:
         pass
 
 if __name__ == "__main__":
     img_de_fundo = Image.open('out/resize_img.jpg')
-    gato_ = Image.open('out/gato_reduzido.png')
-    recursion_memeHowAuto(img_de_fundo, ['como', 'quando', 'aonde', 'de q maneira', '???'], frame_count=90, interval=5)
-    input()
+
+    #gato_ = Image.open('out/meu_rabo.png')
+    ##gato_ = remove_range_color_alpha('out/gato_reduzido.png')
+    #img_de_fundo.paste(gato_, (int(img_de_fundo.size[0] /2), int(img_de_fundo.size[1] /2)))
+    #img_de_fundo = insert_imageInCoord(img_de_fundo, gato_, (int(img_de_fundo.size[0] /2), int(img_de_fundo.size[1] /2)))
+    #recursion_memeHowAuto(img_de_fundo, ['como', '???'], frame_count=90, interval=15, function=Image.Image.rotate)
+    #input()
     #make_gif_with_img_func(img_de_fundo, 'out/simple_memeGen.gif',gato_ , [0,0,0,0], simple_memeHowGen, 90, [5,0], True,text="Como?")
 
     _file_ = None
