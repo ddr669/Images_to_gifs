@@ -2,7 +2,7 @@
 #-*-encode: utf-8-*-
 #
 from sys import argv as args
-from src.cmdline_controll import animation_banner
+from cmdline_controll import animation_banner
 
 BLACK_RANGE_COLOR    = {"lower_target"  : [0,0,0],       "upper_target": [55,55,55]}
 WHITE_RANGE_COLOR    = {"lower_target"  : [200,200,200], "upper_target": [255,255,255]}
@@ -21,10 +21,11 @@ BOLD_HIGH = lambda x: f"\033[1m{x}\033[0m"
 ITALIC_HIGH = lambda x: f"\033[3m{x}\033[0m"
 SHADOW_HIGH = lambda x: f"\033[2m{x}\033[0m"
 
-def __help__(_baner_: bool = True):
+def banner_help(_baner_: bool = True) -> int:
     ''' BANNNER '''
     animation_banner()
     print("usage transforma_gif.py")
+    return 0
 
 def return_file_() -> dict:
     _ = {   "framerate": None, 
@@ -87,4 +88,4 @@ def cmdline_verify(array: list) -> dict:
 
 if __name__ == "__main__":
     _ = cmdline_verify(args)
-    app = __help__()
+    app = banner_help()
