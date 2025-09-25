@@ -16,6 +16,7 @@ from pygame.sprite import Sprite, Group
 from random import randint
 from moviepy import AudioFileClip, ImageSequenceClip
 
+
 from os import listdir as os_path
 from os.path import exists as path_exist
 from os import getcwd as GETPWD
@@ -506,6 +507,7 @@ class WithPygame:
         return Image.fromarray(new_rgb).transpose(Image.Transpose.TRANSPOSE)   
     
 
+
 def sanitize_ranges(lower_target: list | tuple,upper_target: list | tuple)->list[np.array,np.array]:
     if type(lower_target) == list or type(lower_target) == tuple:
         lower_target = np.array(lower_target)
@@ -618,6 +620,46 @@ def recursion_memeHowAuto(file_image: Image.Image | cv2.Mat,
     frame0.save(new_filename, format="GIF", save_all=True, append_images=frames, duration=frame_count, loop=0)
     if DEBUG_INFO:
         print(f"{GREEN_COLOR}[Process terminated]{DEFAULT_COLOR} time:{time_now() - first_ini_time}")
+
+def merge_array(file_image: Image.Image | cv2.Mat,
+                to_merge: list[np.ndarray] | tuple[np.ndarray] | cv2.Mat | np.ndarray):
+    if type(file_image) != cv2.Mat or type(file_image) != np.ndarray:
+        file_image = return_array(file_image)
+    if type(to_merge) == np.ndarray: # break
+        new_ = cv2.merge(to_merge, dst=file_image)
+    elif type(to_merge) == list or type(to_merge) == tuple:
+        tmp = []
+        for _ in to_merge:
+            tmp.append(_)
+        new_ = cv2.merge(tmp, dst=file_image)
+    elif type(to_merge) == cv2.Mat:
+        r,g,b,a = cv2.split(to_merge)
+        new_ = cv2.merge([r,g,b,a], file_image)
+    else:
+        new_ =  cv2.merge([file_image, to_merge])
+    return new_
+
+def simulate3DOverFlow(file_image: Image.Image | cv2.Mat,
+                       out: str = 'out/merged_image.png') -> Image.Image:
+    array = return_array(file_image)
+    # redpos, greepos, blupos = ((-2, -2), (2,2), (2,-2))
+    red, green, blue = (array[:,:,0], array[:,:,1], array[:,:,2])
+    _tmp_file_size = Image.open(file_image).size
+    bg = Image.new('RGB', _tmp_file_size, (0,0,0))
+    #red = red.__invert__()
+    #blue = blue.__invert__()
+    #green = green.__invert__()
+    red.sort()
+    #blue.sort()
+    green.sort()
+    new_file = merge_array(bg, [blue,green, red])
+
+    if out:
+        Image.fromarray(new_file).save(out)
+    return new_file
+
+def return_grayscale_videoLoaded(video: str):
+    return cv2.cvtColor(return_array(video), cv2.COLOR_BGRA2GRAY)
 
 def create_mask(file: Surface | Image.Image,
                 lower_target: np.array = np.array([0,0,0]),
@@ -796,14 +838,15 @@ def insert_image_in_mask(file: Surface | Image.Image,
     return Image.fromarray(new_rgb).transpose(Image.Transpose.TRANSPOSE)
 
 
-def return_array(file: str | Image.Image):
+def return_array(file: str | Image.Image) -> np.ndarray:
     if type(file) == np.array or type(file) == np.ndarray:
         return file
     if type(file) == Image.Image or type(file) == PngImagePlugin.PngImageFile or type(file) == JpegImagePlugin.JpegImageFile:
         file = np.array(file)
         try:
-            _ = cv2.cvtColor(file, cv2.COLOR_BGR2BGRA)
-        except cv2.error:
+            _ = cv2.cvtColor(file, cv2.COLOR_BGR2RGBA) # look at this sometime !
+        except cv2.error as err:
+            
             _ = cv2.cvtColor(file, cv2.COLOR_BGRA2RGBA)
     else:
         _ = cv2.imread(file, cv2.IMREAD_UNCHANGED) 
@@ -830,10 +873,15 @@ def make_gif_with_img_func(file,file_name: str = 'out/new_file.gif',
         tmp_file_size = file.size
     direction = 0
     file_tmp_name = []
+    # TODO
+    #   kwargs.get function with args in a dict to
+    #   run all functions without break nd ways 
+    #   work
+    #
     for a in range(0, frames_len):
         if DEBUG_INFO:
-            #print(f"{RED_COLOR}[Loading frame{a} in RAM]{DEFAULT_COLOR}")
             ini_time = time_now()
+
         if function_draw:
             new_file = function_draw(file, text=kwargs.get('text'))
             #new_file = function_draw(file,
@@ -844,49 +892,46 @@ def make_gif_with_img_func(file,file_name: str = 'out/new_file.gif',
             #                         direction,
             #                         effect, entropy=kwargs.get('entropy'), framec=a,rotate=a,stroke=kwargs.get('stroke'))
         else:
-            # new_file = function_draw(file, over_img, coord, tmp_file_size, animation_speed, direction, effect) # WithPygame.draw_function_text_nd_glitch
+
             new_file = function_draw(file)
 
         FRAMES.append(new_file)
-        # load in HD memory 
-        # slowly !
-        #f_name_tmp = f'tmp/.~tmp_fileimage{randint(0,1666)}'
-        #if f_name_tmp in file_tmp_name:
-        #    f_name_tmp = f'tmp/.~tmp_fileimage{randint(0, 1000)}'
-        
-        #file_tmp_name.append(f_name_tmp)
-        #with open(f_name_tmp, 'wb') as f:
-        #    pickle.dump(new_file, f)
+       
         if DEBUG_INFO:
             print(f"{RED_COLOR}[Loading frame{a} in RAM]{DEFAULT_COLOR}time: { time_now() - ini_time}")
 
-    #for a in file_tmp_name:
-    #    with open(a, 'rb') as f:
-    #        FRAMES.append(pickle.load(f))
-        
     frame0 = FRAMES[0]
     frame0.save(file_name, format="GIF", save_all=True, append_images=FRAMES, duration=frames_len, loop=0)
     if DEBUG_INFO:
         print(f"{GREEN_COLOR}[Process terminated]{DEFAULT_COLOR} time:{time_now() - first_ini_time}")
+
     del frame0, tmp_file_size, direction, function_draw, FRAMES
+
+
+def make_a_gray_video(frame,
+                      file_name: str = 'out/new_file_gray.gif',
+                      frames_len: int = 90):
+    new_frames = []
+    for a in range(0, frames_len):
+        new_frames.append(return_grayscale_videoLoaded(frame))
+    
+    frame0 = Image.fromarray(new_frames[0])
+    frames = [Image.fromarray(_) for _ in new_frames]
+    frame0.save(file_name, format="GIF", save_all=True, append_images=frames, duration=frames_len, loop=0)
 
 def main(file_dict: dict):
     if file_dict == "!":
-        banner_help()
+        #banner_help()
         exit()
     if file_dict["GUI"]:
         pass
 
 if __name__ == "__main__":
-    img_de_fundo = Image.open('out/resize_img.jpg')
+    #img_de_fundo = Image.open('out/resize_img.jpg')
 
-    #gato_ = Image.open('out/meu_rabo.png')
-    ##gato_ = remove_range_color_alpha('out/gato_reduzido.png')
-    #img_de_fundo.paste(gato_, (int(img_de_fundo.size[0] /2), int(img_de_fundo.size[1] /2)))
-    #img_de_fundo = insert_imageInCoord(img_de_fundo, gato_, (int(img_de_fundo.size[0] /2), int(img_de_fundo.size[1] /2)))
-    #recursion_memeHowAuto(img_de_fundo, ['como', '???'], frame_count=90, interval=15, function=Image.Image.rotate)
-    #input()
-    #make_gif_with_img_func(img_de_fundo, 'out/simple_memeGen.gif',gato_ , [0,0,0,0], simple_memeHowGen, 90, [5,0], True,text="Como?")
+
+    #simulate3DOverFlow('out/resize_img.jpg')
+
 
     _file_ = None
     try:
