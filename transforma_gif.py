@@ -3,50 +3,10 @@
 #-*-By:__DDr669__-*-
 #-*-Date:__/__/__-*-
 
-from PIL import Image, PngImagePlugin, JpegImagePlugin, ImageDraw, ImageFont
-import cv2
-import numpy as np
-from sys import argv
-
 from src import *
-from pygame import Surface, surfarray, SRCALPHA, font, draw, Rect, image
-from pygame.transform import scale
-from pygame.sprite import Sprite, Group
 
-from random import randint
-from moviepy import AudioFileClip, ImageSequenceClip
-
-
-from os import listdir as os_path
-from os.path import exists as path_exist
-from os import getcwd as GETPWD
-from time import time as time_now
- 
 font.init()
 print("\n\r\n\r") # just to keep the pygame welcome ^^
-
-
-class Sprites_(Sprite):
-        def __init__(self, _file: str | Image.Image = None,
-                    color=(0,0,0,0),
-                    height: int = None,
-                    width: int = None
-                    ):
-            super().__init__()
-            if type(_file) == Image.Image:
-                try:
-                    self.image = image.frombytes(_file.tobytes(), _file.size,  _file.mode)
-                    self.mode = _file.mode
-                except ValueError:
-                    self.image = image.frombytes(_file.tobytes(), _file.size, 'RGB')
-                    self.mode = 'RGB'
-            elif type(_file) == np.ndarray:
-                _tmp_img = Image.fromarray(_file).convert()
-                self.image = image.frombytes(_tmp_img.tobytes(), _tmp_img.size,_tmp_img.mode)
-                self.mode = _tmp_img.mode
-            else:
-                self.image = image.load(_file)
-            self.rect = self.image.get_rect()    
 
 class WithPygame:
     def make_gif_from_video( 
@@ -404,78 +364,7 @@ class WithPygame:
             del _img, sprite_group, size, arraysurf
         del file
         return _temp, mode
-    def draw_function_font_and_filepaste(file: Image.Image,
-                        over_file = None,
-                        coord: list = [0,0],
-                        tmp_file_size: list = [1024, 900],
-                        speed: list = [0, 1],
-                        direction: int = 0,
-                        func = None, **kwargs) -> Image.Image:
-
-            
-                # down
-            over_file = Image.open(over_file) if type(over_file) == str else over_file
-            if kwargs.get('rotate'):
-                    
-                    over_file = over_file.rotate(kwargs.get('rotate'))
-                    #over_file = return_array(over_file)
-           
-            if coord[0] >= tmp_file_size[0]:
-                direction = 0
-            elif coord[0] <= 0 and direction == 0:
-                direction = 1
-            elif coord[1] >= tmp_file_size[1]:
-                direction = 0
-            elif coord[1] <= 0 and direction == 0:
-                direction = 1
-                
-            if direction == 1:
-                coord[0] += speed[0]
-                coord[1] += speed[1]
-                
-                new_file = insert_imageInCoord(file, over_file, coord[:2])
-            else:
-                coord[0] -= speed[0]
-                coord[1] -= speed[1]
-                new_file = insert_imageInCoord(file, over_file, coord[:2])
-
-            if func:
-
-                new_bg_file = over_file.resize(tmp_file_size)
-                if kwargs.get('entropy'):
-                    
-                    if int(kwargs.get('framec')) % int(kwargs.get('entropy')) == 0:
-                        new_file = glitchImageMask(new_file, [255,255,255, 255], [255,255,255, 255], new_bg_file).transpose(Image.Transpose.TRANSPOSE).convert("RGB")
-                
-                if kwargs.get('stroke'):
-                    stroke = kwargs.get('stroke')
-                
-                #if kwargs.get('rotate'):
-                #    new_file = new_file.rotate(kwargs.get('rotate')) if type(kwargs.get('rotate')) == int else 0
-
-                spt_sheet = Sprites_(new_file)
-                if stroke:
-                    text_file = WithPygame.return_surface(tmp_file_size, spt_sheet)
-                    text_file2 = WithPygame.type_text_in_img(text_file, 'CUM', 91, 'impact', [0,0,0], [(tmp_file_size[0]/2),(tmp_file_size[1]/2)+stroke])
-                    text_file3 = WithPygame.type_text_in_img(text_file, 'CUM', 91, 'impact', [0,0,0], [(tmp_file_size[0]/2),(tmp_file_size[1]/2)-stroke])
-                    text_file4 = WithPygame.type_text_in_img(text_file, 'CUM', 91, 'impact', [0,0,0], [(tmp_file_size[0]/2)-stroke,(tmp_file_size[1]/2)])
-                    text_file5 = WithPygame.type_text_in_img(text_file, 'CUM', 91, 'impact', [0,0,0], [(tmp_file_size[0]/2)+stroke,(tmp_file_size[1]/2)])
-                    text_file = WithPygame.type_text_in_img(text_file, 'CUM', 90, 'impact', [255,255,255], [tmp_file_size[0]/2,tmp_file_size[1]/2])
-                    
-                    aimeudeu = Image.fromarray(surfarray.array3d(text_file)).transpose(Image.Transpose.TRANSPOSE)
-                    aimeudeu2 = Image.fromarray(surfarray.array3d(text_file2)).transpose(Image.Transpose.TRANSPOSE)
-                    aimeudeu3 = Image.fromarray(surfarray.array3d(text_file3)).transpose(Image.Transpose.TRANSPOSE)
-                    aimeudeu4 = Image.fromarray(surfarray.array3d(text_file4)).transpose(Image.Transpose.TRANSPOSE)
-                    aimeudeu5 = Image.fromarray(surfarray.array3d(text_file5)).transpose(Image.Transpose.TRANSPOSE)
-                    
-                    new_file.paste(aimeudeu4, coord[2:])
-                    new_file.paste(aimeudeu5, coord[2:])
-                    new_file.paste(aimeudeu2, coord[2:])
-                    new_file.paste(aimeudeu3, coord[2:])
-                    new_file.paste(aimeudeu, coord[2:])
-                    
-            del aimeudeu, aimeudeu2, spt_sheet, new_bg_file, coord, tmp_file_size, text_file, text_file2
-            return new_file
+   
     def insert_imageBitwiseAnd(file: Surface | Image.Image,
                             lower_target: list = np.array([0,0,0]),
                             upper_target: list = np.array([45,45,45]),
@@ -508,7 +397,10 @@ class WithPygame:
     
 
 
-def sanitize_ranges(lower_target: list | tuple,upper_target: list | tuple)->list[np.array,np.array]:
+
+def sanitize_ranges(lower_target: list | tuple,
+                    upper_target: list | tuple)->list[np.array,np.array]:
+    
     if type(lower_target) == list or type(lower_target) == tuple:
         lower_target = np.array(lower_target)
         upper_target = np.array(upper_target)
@@ -549,7 +441,6 @@ def simple_memeHowGen(file_image: Image.Image | cv2.Mat,
                       font_color: tuple = (255,255,255),
                       font_size: int = 28,
                       txt_pos: tuple | None = None) -> Image.Image:
-    
     new_file = file_image.reduce(2)
     bg_color = tuple(bg_color)
     font_color = tuple(font_color)
@@ -621,6 +512,10 @@ def recursion_memeHowAuto(file_image: Image.Image | cv2.Mat,
     if DEBUG_INFO:
         print(f"{GREEN_COLOR}[Process terminated]{DEFAULT_COLOR} time:{time_now() - first_ini_time}")
 
+
+def paste_array_in_array():
+    pass
+
 def merge_array(file_image: Image.Image | cv2.Mat,
                 to_merge: list[np.ndarray] | tuple[np.ndarray] | cv2.Mat | np.ndarray):
     if type(file_image) != cv2.Mat or type(file_image) != np.ndarray:
@@ -645,14 +540,9 @@ def simulate3DOverFlow(file_image: Image.Image | cv2.Mat,
     # redpos, greepos, blupos = ((-2, -2), (2,2), (2,-2))
     red, green, blue = (array[:,:,0], array[:,:,1], array[:,:,2])
     _tmp_file_size = Image.open(file_image).size
+
     bg = Image.new('RGB', _tmp_file_size, (0,0,0))
-    #red = red.__invert__()
-    #blue = blue.__invert__()
-    #green = green.__invert__()
-    red.sort()
-    #blue.sort()
-    green.sort()
-    new_file = merge_array(bg, [blue,green, red])
+    new_file = merge_array(bg, [blue, green, red])
 
     if out:
         Image.fromarray(new_file).save(out)
@@ -921,7 +811,7 @@ def make_a_gray_video(frame,
 
 def main(file_dict: dict):
     if file_dict == "!":
-        #banner_help()
+        banner_help()
         exit()
     if file_dict["GUI"]:
         pass
@@ -930,7 +820,7 @@ if __name__ == "__main__":
     #img_de_fundo = Image.open('out/resize_img.jpg')
 
 
-    #simulate3DOverFlow('out/resize_img.jpg')
+    simulate3DOverFlow('out/resize_img.jpg')
 
 
     _file_ = None
