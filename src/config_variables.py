@@ -37,12 +37,31 @@ BUT IF YOU CAN WAIT FOR IT, I can't longer help if it break.\n
 if you already clip the file and want to proceed with\n
 a file of 60@fps or want to change to 24@fps?{DEFAULT_COLOR}\n"""
 #
-KWARGS_DICT = {'save_as':'new_file01',   # save_as: str = 'new_file01' ( takes orig. extension or function method. )
-                'framecounter': 0,       # int = 0 ( video lenght if not given will take all the lenght of orig. )
-                'fpsrate': 0,            # int = 0 ( in video or gif automatic select 24 frameper seconds. )
-                'remove_bg': False,      # bool | int = False
-                'new_bgcolor': (0,0,0,0),# np.ndarray(3 or 4) | list = [0,0,0]
-                'lower_target': None,    # np.ndarray(3) | list = [0,0,0]
-                'upper_target': None,    # np.ndarray(3) | list = [0,0,0]
-                'resize': False,         # tuple | list = (40,40)
-                 }
+
+black_color_rgb = (0,0,0)
+white_color_rgb = (255,255,255)
+gray_color_rgb = (75,75,75)
+
+default_font_path = str("c:\\WINDOWS\\Fonts\\CHARLEMAGNESTD-BOLD.OTF")
+
+KWARGS_DICT = {
+    'save_as':'new_file01',     # save_as: str = 'new_file01' ( takes orig. extension or function method. )
+    'framecounter': 0,          # int = 0 ( video lenght if not given will take all the lenght of orig. )
+    'fpsrate': 0,               # int = 0 ( in video or gif automatic select 24 frameper seconds. )
+    'remove_bg': False,         # bool | int = False
+    'new_bgcolor': (0,0,0,0),   # np.ndarray(3 or 4) | list = [0,0,0]
+    'lower_target': None,       # np.ndarray(3) | list = [0,0,0]
+    'upper_target': None,       # np.ndarray(3) | list = [0,0,0]
+    'coord': None,              # coord behave aways as txt_pos, coord
+    'resize': False,            # tuple | list = (40,40)
+    'effect': False,            # somethimes a draw_function ask for effects bool ( true or false )
+    'animation_speed': None,    # * goes with draw_function ( animation through video )
+    'function_draw': None,      # animation function ( module pre made function or handmade )
+    'text': None,
+    'interval': None,           # * goes with draw_function ( animation through video )
+    'font-color': black_color_rgb,
+    'font-size': 28,            #   
+    'font-familly': default_font_path,  # 
+    'size': None,               # 
+    'width': None,              # same as size but sometimes goes different
+}

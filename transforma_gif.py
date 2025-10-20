@@ -540,16 +540,19 @@ def simulate3DOverFlow(file_image: Image.Image | cv2.Mat,
     # redpos, greepos, blupos = ((-2, -2), (2,2), (2,-2))
     red, green, blue = (array[:,:,0], array[:,:,1], array[:,:,2])
     _tmp_file_size = Image.open(file_image).size
-
+    
     bg = Image.new('RGB', _tmp_file_size, (0,0,0))
     new_file = merge_array(bg, [blue, green, red])
 
+    bg.paste(Image.fromarray(new_file), (0,0))
+    
+
+    cv2.Canny(new_file, 0, 100)
+
     if out:
-        Image.fromarray(new_file).save(out)
+        bg.save(out)
     return new_file
 
-def return_grayscale_videoLoaded(video: str):
-    return cv2.cvtColor(return_array(video), cv2.COLOR_BGRA2GRAY)
 
 def create_mask(file: Surface | Image.Image,
                 lower_target: np.array = np.array([0,0,0]),
