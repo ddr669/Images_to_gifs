@@ -4,13 +4,13 @@
 #-*-Date:__/__/__-*-
 
 from time import sleep
+
 from sys import stdout, argv as args
 from typing import Any
 
 BOLD_HIGH = lambda x: f"\033[1m{x}\033[0m"
 DARK_HIGH = lambda x: f"\033[2m{x}\033[0m"
 ITALIC_HI = lambda x: f"\033[3m{x}\033[0m"
-
 
 BLACK_RANGE_COLOR    = {"lower_target"  : [0,0,0],       "upper_target": [55,55,55]}
 WHITE_RANGE_COLOR    = {"lower_target"  : [200,200,200], "upper_target": [255,255,255]}
@@ -28,7 +28,6 @@ COLOR_SCHEME_DICT    = {"black": BLACK_RANGE_COLOR,
 BOLD_HIGH = lambda x: f"\033[1m{x}\033[0m"
 ITALIC_HIGH = lambda x: f"\033[3m{x}\033[0m"
 SHADOW_HIGH = lambda x: f"\033[2m{x}\033[0m"
-
 
 BANNER = [" ▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁"]
 BANNER.append("▕\033[0;37;41m▒▒▒▒▒▒▒▒▒▒▒▒▒▒\033[0;30;47m░░░░░\033[0;37;41m▒▒▒▒▒▒▒\033[1;37;40m░░░░\033[0;37;41m▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒\033[0;31;40m░░░\033[0;0;0m▏")
@@ -49,8 +48,10 @@ OPTIONS = []
 OPTIONS.append(f"{BOLD_HIGH('GUI OPTIONS')}")
 OPTIONS.append("-"*len('GUI_OPTIONS'))
 OPTIONS.append(f"{DARK_HIGH(f'These options work alone in GUI mode')}")
-OPTIONS.append(f"{DARK_HIGH(f'but with other options like {BOLD_HIGH('--save')}')}")
+OPTIONS.append(f"{DARK_HIGH(f'but with other options like {BOLD_HIGH('--out or -o')}')}")
 OPTIONS.append(f"{DARK_HIGH(f'run in CD/CLI mode and save.\t {BOLD_HIGH('<DEFAULT new_filename=new_file.png|gif|jpg>')}')}")
+OPTIONS.append(f"\t{DARK_HIGH(f'-g or --gui')} - entry in GUI mode.")
+OPTIONS.append(f"\n{BOLD_HIGH('edit-functions')}\n{str('*'*len('edit-functions'))}")
 OPTIONS.append(f"\t{BOLD_HIGH('--remove-color')} - remove a color in range between. {DARK_HIGH('<DEFAULT COLOR_RANGE=black>')}")
 OPTIONS.append(f"\t\t{DARK_HIGH(f'use with options {BOLD_HIGH('--color-range=[10,10,10],[25,25,25]')}')}")
 OPTIONS.append(f"\t\t{DARK_HIGH(f'default new_background_color=(0,255,0)')} # {BOLD_HIGH('green')}")
@@ -58,12 +59,40 @@ OPTIONS.append(f"\t{BOLD_HIGH('--apply-alpha')} - apply transparency to a image.
 OPTIONS.append(f"\t\t{DARK_HIGH('quick-mode:')} transforma_gif.py file.png --save new_file.png --apply-alpha black")
 OPTIONS.append(f"\t\t\t{DARK_HIGH('HINT: look for another color range in cmdline_verify.py')}")
 
+black_color_rgb = (0,0,0)
+white_color_rgb = (255,255,255)
+gray_color_rgb = (75,75,75)
+
+default_font_path = str("c:\\WINDOWS\\Fonts\\CHARLEMAGNESTD-BOLD.OTF")
+
+
+KWARGS_DICT = {
+    
+    'save_as':'new_file01',     # save_as: str = 'new_file01' ( takes orig. extension or function method. )
+    'framecounter': 0,          # int = 0 ( video lenght if not given will take all the lenght of orig. )
+    'framerate': 0,               # int = 0 ( in video or gif automatic select 24 frameper seconds. )
+    'remove_bg': False,         # bool | int = False
+    'new_bgcolor': (0,0,0,0),   # np.ndarray(3 or 4) | list = [0,0,0]
+    'lower_target': None,       # np.ndarray(3) | list = [0,0,0]
+    'upper_target': None,       # np.ndarray(3) | list = [0,0,0]
+    'coord': None,              # coord behave aways as txt_pos, coord
+    'resize': False,            # tuple | list = (40,40)
+    'effect': False,            # somethimes a draw_function ask for effects bool ( true or false )
+    'animation_speed': None,    # * goes with draw_function ( animation through video )
+    'function_draw': None,      # animation function ( module pre made function or handmade )
+    'text': None,
+    'interval': None,           # * goes with draw_function ( animation through video )
+    'font-color': black_color_rgb,
+    'font-size': 28,            #   
+    'font-familly': default_font_path,  # 
+    'size': None,               # 
+    'width': None,              # same as size but sometimes goes different
+}
 
 def animation_cmd(banner: list[str]):
     """
     just a ascii animation before ascii main banner.
-    * invisible ascii char, unknown behavor
-    
+    * invisible ascii char, unknown behavor.
     >>> animation_cmd()
     ... 
     """
@@ -94,10 +123,8 @@ def animation_cmd(banner: list[str]):
 def anima_options(options: list[str]):
     """
         draw text module options and functions.
-
         >>> anima_options(OPTIONS) 
         ... 
-
     """
     for _ in options:
         sleep(0.00003)
@@ -105,41 +132,44 @@ def anima_options(options: list[str]):
         stdout.flush()
 
 def animation_banner():
-    """ 
-        help 
-                
-    """
+    """ help """
     animation_cmd(BANNER)
     anima_options(OPTIONS)
 
-def kwargs_getAndSet(params: dict[Any, Any], *kwargs)->dict[str, Any]:
+def kwargs_getAndSet(params: dict[Any, Any], **kwargs)->dict[str, Any]:
+    
+    for _ in KWARGS_DICT.keys():
+        value = None
+        if isinstance(params, dict):
+            value = params.fromkeys(_)
+
+        kwargs[_] = KWARGS_DICT[_] if not value else value
+
+
     return kwargs
 
 def banner_help(_baner_: bool = True) -> int:
     """ 
     BANNNER
     usage before anima_options.
-
     >>> banner_help()
     ... 0
     """
-
     animation_banner()
-    print("usage transforma_gif.py")
+    print("\n")
+    print("usage transforma_gif.py -f image_file.png --transform_func={PARAMS} -o new_file.gif")
     return 0
 
 def return_file_() -> dict:
     """
     first run at call in cmdline.
     :return: <dict[Any, Any]> *kwargs
-
     """
 
     _ = {   "framerate": None, 
             "out_path": "out/",
             "GUI": False}       
     return '!'
-
 
 def cmdline_verify(array: list) -> dict:
     """
@@ -150,45 +180,62 @@ def cmdline_verify(array: list) -> dict:
     :params array: list
     :return: dict
     """
-
+    files   = []
     counter = 0
     _ =     {   "file": None,
                 "framerate": None,
                 "out_path": "out/",
                 "GUI": False,
-                "color_scheme": None}
-    
+                "color_scheme": None,}
+ 
     for ITEM in array:
         if "=" in ITEM:
-            if ITEM[:len("--frame")].lower() == "--frame": 
+            # --framerate
+            if ITEM[:len("--framerate")].lower() == "--framerate": 
                 _["framerate"] = array[counter].rstrip("=").rsplit("=")[-1]
+
+            # -o --out
             if ITEM[:len("-o")].lower() == "-o" or ITEM[:len("--out")].lower() == "--out":
                 _["out_path"] = array[counter].rstrip("=").rsplit("=")[-1]
+
+            # --file    
             if ITEM[:len("-f")].lower() == "-f" or ITEM[:len("--file")].lower() == "--file":
                 _["file"] = array[counter].rstrip("=").rsplit("=")[-1]
+                files.append({_['file']:kwargs_getAndSet(_['file'])})
+
+
+            # -g --gui
             if ITEM[:len("-g")].lower() == "-g" or ITEM[:len("--gui")].lower() == "--gui":
                 _["GUI"] = True
-            if ITEM[:len("-c")].lower() == "-c" or ITEM[:len("--color")].lower() == "--color":
+
+            # --color=[]
+            if ITEM[:len("--color")].lower() == "--color":
                 _["color_scheme"] = COLOR_SCHEME_DICT[array[counter].rstrip("=").rsplit("=")[-1].lower()]
 
     # TODO 
         match ITEM:
-            case "--frame" | "--framerate":
+            case "--framerate" | "-framerate":
                 try: 
                     _["framerate"] = array[counter + 1]
                 except IndexError as Err:
                     return -1
-            case "-o" | "--out":
+            case "-o" | "--out" | "--save-as":
                 try:
-                    _["out_path"] = array[counter + 1]
+                    _["save_as"] = array[counter + 1]
                 except IndexError as Err:
                     return -1
+                
+                
+                if _["save_as"].rstrip('.').rsplit('.')[-1] == 'gif':
+                    print("gif")
+                
             case "-g" | "--gui" | "--GUI":
                 _["GUI"] = True
 
             case "-f" | "--file":
                 try:
                     _["file"] = array[counter + 1]
+                    files.append({_['file']:kwargs_getAndSet(_['file'])})
                 except IndexError:
                     return -1
             case "-c" | "--color":
@@ -196,10 +243,12 @@ def cmdline_verify(array: list) -> dict:
                     _["color_scheme"] = COLOR_SCHEME_DICT[array[counter+1].lower()]
                 except IndexError:
                     return -1
-
+            
         if counter < len(array):
             counter += 1
 
+    _['edits_files'] = files
+    
     return _
 
 if __name__ == '__main__':
