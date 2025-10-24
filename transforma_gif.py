@@ -14,6 +14,8 @@ class Image_class_module:
 
         self.old_image = None
         self.is_alpha  = False
+        self._mode     = None
+        #self._mode_dict= {'BGR': cv2.COLOR_BGR2RGB}
         if isinstance(img, np.ndarray):
             self.matrix   = img
             self.image    = return_image_from_array(img)
@@ -51,10 +53,12 @@ class Image_class_module:
                 new_ = cv2.cvtColor(self.matrix, cv2.COLOR_BGR2BGRA)
                 b, g, r, alpha = cv2.split(new_)
 
-            self.matrix = cv2.merge([b,g,r,alpha]) if mode == 'BGR' else cv2.merge([r,g,b,alpha])
+            self.matrix, self._mode = cv2.merge([b,g,r,alpha]), 'BGRA' if mode == 'BGR' else cv2.merge([r,g,b,alpha]), 'RGBA'
+
             self.image  = return_image_from_array(self.matrix)
             self.is_alpha = True
             return 0
+
         else:
             try:
                 b, g, r, alpha = cv2.split(matrix)
@@ -62,7 +66,12 @@ class Image_class_module:
                 new_ = cv2.cvtColor(matrix , cv2.COLOR_BGR2BGRA)
                 b, g, r, alpha = cv2.split(new_)
             
+            if mode == 'BGR':
+                self._mode = 'BGRA'
+            else:
+                self._mode = 'RGBA'
             return cv2.merge([b,g,r,alpha]) if mode == 'BGR' else cv2.merge([r,g,b,alpha])
+
     def remove_range_color_alpha(self,
                                 lower_target: list = np.array([0,0,0,255]),
                                 upper_target: list = np.array([45,45,45,255]),
@@ -107,11 +116,13 @@ class Image_class_module:
         return mask
 
     def insert_imageInCoord(self, over_file: cv2.Mat | np.ndarray, coord: list | tuple = [0,0]) -> Image.Image:
+
         new_file = self.transform_in_alpha(over_file)
         tmp_ = self.transform_in_alpha(self.image)
         new_file_pil = return_image_from_array(new_file)
         mask = new_file_pil.split()[3]
-        tmp_pil = Image.fromarray(tmp_, 'RGBA')
+        tmp_pil = Image.fromarray(tmp_, 'RGBA') if not self._mode else Image.fromarray(tmp_, self._mode)
+
         tmp_pil.paste(new_file_pil, coord, mask=mask)
 
         self.image = tmp_pil
@@ -128,16 +139,24 @@ class Image_class_module:
         self.old_image = self.image 
         if isinstance(to_merge, np.ndarray):
             new_ = cv2.merge(to_merge, dst=self.matrix)
+
         elif isinstance(to_merge, list) or isinstance(to_merge, tuple):
             tmp = []
             for _ in to_merge:
                 tmp.append(_)
             new_ = cv2.merge(tmp, dst=self.matrix)
+
         elif type(to_merge) == cv2.Mat:
-            r,g,b,a = cv2.split(to_merge)
-            new_ = cv2.merge([r,g,b,a], self.matrix)
+            try:
+                r,g,b,a = cv2.split(to_merge)
+                new_ = cv2.merge([r,g,b,a], self.matrix)
+            except ValueError:
+                r,g,b = cv2.split(to_merge)
+                new_ = cv2.merge([r,g,b], self.matrix)
+
         else:
             new_ =  cv2.merge([self.matrix, to_merge])   
+
         self.matrix = new_
         self.image  = return_image_from_array(self.matrix)
 
@@ -183,6 +202,19 @@ class Image_class_module:
         self.matrix = new_rgb
         self.image = Image.fromarray(new_rgb).transpose(Image.Transpose.TRANSPOSE)
 
+
+
+    def sobel_filter(self) -> cv2.Mat:
+        if not self._mode:
+            gray_img = cv2.cvtColor(self.matrix, cv2.COLOR_BGR2GRAY)
+        else:
+            gray_img = cv2.cvtColor(self.matrix, cv2.COLOR_RGB2GRAY) if self._mode == 'RGB' else cv2.cvtColor(self.matrix, cv2.COLOR_BGRA2GRAY)
+
+        laplacian = cv2.Laplacian(gray_img, cv2.CV_64F)
+        laplacian = np.uint8(np.absolute(laplacian))
+        cv2.imshow('lap',laplacian)
+
+        cv2.waitKey(0)
 
 def simple_memeGen(file_image: Image.Image | cv2.Mat,
                    text: str = "Me when",
@@ -352,7 +384,7 @@ def glitchImageMask(file: Surface | Image.Image,
 
 
 def return_array(file: str | Image.Image) -> np.ndarray:
-    if isinstance(file, np.array) or isinstance(file, np.ndarray):
+    if isinstance(file, np.ndarray):
         return file
     if type(file) == Image.Image or type(file) == PngImagePlugin.PngImageFile or type(file) == JpegImagePlugin.JpegImageFile:
         file = np.array(file)
@@ -444,8 +476,9 @@ if __name__ == "__main__":
 
     #WithPygame.insert_imageBitwiseAnd('out/gato_reduzido.png').save('out/kadabra.png')
     #simulate3DOverFlow('out/gato_reduzido.png')
+    img = Image_class_module('out/gato_reduzido.png')
 
-
+    img.sobel_filter()
     _file_ = None
     try:
         __ = argv[1]
