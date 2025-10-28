@@ -20,7 +20,13 @@
 
 | original | both edge detection ( gray_input ) | both edge detection (colored) |
 | :---: | :---: | :---: |
-| ![reduced_car](out/car_reduced.jpg) | ![car_reduced_edge_detection_gray](out/hype.jpg) | ![car_edge_color](out/poggers.jpg) |  
+| ||  |  
+
+![reduced_car](out/car_reduced.jpg) 
+
+![car_reduced_edge_detection_gray](out/hype.jpg) 
+
+![car_edge_color](out/poggers.jpg)
 
 </div>
 
