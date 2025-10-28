@@ -22,7 +22,7 @@
 | :---: | :---: | :---: |
 | ||  |  
 
-![reduced_car](out/car_reduced.jpg) 
+![reduced_car](out/car_reduce.png) 
 
 ![car_reduced_edge_detection_gray](out/hype.jpg) 
 
