@@ -334,28 +334,7 @@ def main(file_dict: dict):
         pass
 
 if __name__ == "__main__":
-    img2 =Image_class_module('out/carro.jpg') 
-    img = Image_class_module('out/carro.jpg')
-    #img.image.show('no')
-    img.transform_into_gray()
-    #img.update_image(img.image.reduce(2))
-    img.update_image(img.image.resize((800, 400)))
-    img2.update_image(img2.image.resize((800, 400)))
-    filtro_blur = np.array([[1, 1, 1], [1, 1, 1], [1, 1, 1]])
-    filtro_blur = filtro_blur / 9
-    #filtrado = cv2.filter2D(img.matrix, -1, filtro_blur)
-    #filtrado = cv2.cvtColor(filtrado, cv2.COLOR_BGR2RGB)
-    filtrado1 = img.convolution(filtro_blur)
-    #filtrado1 = cv2.cvtColor(filtrado1, cv2.COLOR_BGR2RGB)
-    
-    #img.update_image(return_image_from_array(filtrado1))
-    img.both_edge_detection()
-    #ab = return_image_from_array(img.convolution(np.array([[0.9, 0.9,0.9],[0.9, 0.9,0.9],[0.9, 0.9,0.9]])))
-    img2.update_image(return_image_from_array(img2.matrix * filtrado1))
-    #ab.save('out/teste2.jpg')
-    img2.image.save('out/test.jpg')
-
-    print('done')
+ 
     _file_ = None
     try:
         __ = argv[1]
