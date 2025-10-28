@@ -3,7 +3,7 @@
 #-*-By:__DDr669__-*-
 #-*-Date:__/__/__-*-
 
-from time import sleep
+from time import sleep, time
 
 from sys import stdout, argv as args
 from typing import Any
@@ -47,14 +47,14 @@ BANNER.append(" ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔�
 OPTIONS = []
 OPTIONS.append(f"{BOLD_HIGH('GUI OPTIONS')}")
 OPTIONS.append("-"*len('GUI_OPTIONS'))
-OPTIONS.append(f"{DARK_HIGH(f'These options work alone in GUI mode')}")
-OPTIONS.append(f"{DARK_HIGH(f'but with other options like {BOLD_HIGH('--out or -o')}')}")
-OPTIONS.append(f"{DARK_HIGH(f'run in CD/CLI mode and save.\t {BOLD_HIGH('<DEFAULT new_filename=new_file.png|gif|jpg>')}')}")
-OPTIONS.append(f"\t{DARK_HIGH(f'-g or --gui')} - entry in GUI mode.")
+OPTIONS.append(f"{DARK_HIGH('These options work alone in GUI mode')}")
+OPTIONS.append(f"{DARK_HIGH('but with other options like --out or -o')}")
+OPTIONS.append(f"{DARK_HIGH('run in CD/CLI mode and save. <DEFAULT new_filename=new_file.png>')}")
+OPTIONS.append(f"\t{DARK_HIGH('-g or --gui')} - entry in GUI mode.")
 OPTIONS.append(f"\n{BOLD_HIGH('edit-functions')}\n{str('*'*len('edit-functions'))}")
 OPTIONS.append(f"\t{BOLD_HIGH('--remove-color')} - remove a color in range between. {DARK_HIGH('<DEFAULT COLOR_RANGE=black>')}")
-OPTIONS.append(f"\t\t{DARK_HIGH(f'use with options {BOLD_HIGH('--color-range=[10,10,10],[25,25,25]')}')}")
-OPTIONS.append(f"\t\t{DARK_HIGH(f'default new_background_color=(0,255,0)')} # {BOLD_HIGH('green')}")
+OPTIONS.append(f"\t\t{DARK_HIGH('use with options --color-range=[10,10,10],[25,25,25]')}")
+OPTIONS.append(f"\t\t{DARK_HIGH('default new_background_color=(0,255,0)')} # {BOLD_HIGH('green')}")
 OPTIONS.append(f"\t{BOLD_HIGH('--apply-alpha')} - apply transparency to a image. {DARK_HIGH('<DEFAULT COLOR_REMOVE=white>')}")
 OPTIONS.append(f"\t\t{DARK_HIGH('quick-mode:')} transforma_gif.py file.png --save new_file.png --apply-alpha black")
 OPTIONS.append(f"\t\t\t{DARK_HIGH('HINT: look for another color range in cmdline_verify.py')}")
@@ -250,6 +250,17 @@ def cmdline_verify(array: list) -> dict:
     _['edits_files'] = files
     
     return _
+
+def time_function(func):
+    def wrapper(*args, **kwargs):
+        start = time()
+        print(f'[started func: {func.__qualname__}].')
+        try:
+            return func(*args, **kwargs)
+        finally:
+            dt_ms = time() - start
+            print(f"[func: {func.__qualname__}]: {dt_ms} ms.")
+    return wrapper
 
 if __name__ == '__main__':
     app = banner_help()
