@@ -22,7 +22,7 @@
 | :---: | :---: | :---: |
 | ||  |  
 
-![reduced_car](out/car_reduce.png) 
+![reduced_car](https://private-user-images.githubusercontent.com/45562328/506876214-c4becdc6-fe8b-4612-a03e-54f7db2f0e57.jpg) 
 
 ![car_reduced_edge_detection_gray](out/hype.jpg) 
 
