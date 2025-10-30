@@ -5,6 +5,7 @@
 
 from time import sleep, time
 
+import tracemalloc
 from sys import stdout, argv as args
 from typing import Any
 
@@ -252,14 +253,24 @@ def cmdline_verify(array: list) -> dict:
     return _
 
 def time_function(func):
+    #_mem = tracemalloc.start()
+    #mem_calc = lambda x, y: (x / (1024*1024), y / (1024*1024))
     def wrapper(*args, **kwargs):
         start = time()
-        print(f'[started func: {func.__qualname__}].')
+        #curr, peak = mem_calc(tracemalloc.get_traced_memory())
+        
+        print(f"[started func: {func.__qualname__}].") #current memory {curr:8.f}MB; peak: {peak:8.f}MB.")
+        
         try:
             return func(*args, **kwargs)
         finally:
             dt_ms = time() - start
-            print(f"[func: {func.__qualname__}]: {dt_ms} ms.")
+            #curr, peak = mem_calc(tracemalloc.get_traced_memory())
+
+            print(f"[func: {func.__qualname__}]: {dt_ms:.8f} ms.")
+            #print(f"[func usage memory]: current: {curr:8.f}MB; peak: {peak:8.f}MB.")
+    
+    #tracemalloc.clear_traces()
     return wrapper
 
 if __name__ == '__main__':
