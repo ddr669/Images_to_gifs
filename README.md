@@ -20,9 +20,7 @@
 
 | original | both edge detection ( gray_input ) | both edge detection (colored) | channel order inverted |
 | :---: | :---: | :---: | :---: |
-| ![car_original](out/car_reduce.png) | ![car_edge_color](out/poggers.jpg) 
-| ![car_reduced_edge_detection_gray](out/hype.jpg) | ![reduced_car](https://github.com/user-attachments/assets/c4becdc6-fe8b-4612-a03e-54f7db2f0e57) 
- | 
+| ![car_original](out/car_reduce.png) | ![car_edge_color](out/poggers.jpg) | ![car_reduced_edge_detection_gray](out/hype.jpg) | ![reduced_car](https://github.com/user-attachments/assets/c4becdc6-fe8b-4612-a03e-54f7db2f0e57) | 
 
 </div>
 
