@@ -10,6 +10,9 @@ font.init()
 print("\n\r\n\r") # just to keep the pygame welcome ^^
 
 class Image_class_module:
+    __slots__ = ['old_image', 'is_alpha',
+		 '_mode', 'matrix', 'image']
+
     def __init__(self, img: Any, **kwargs):
         self.old_image = None
         self.is_alpha  = False
@@ -176,53 +179,78 @@ class Image_class_module:
     
 
     @time_function
-    def both_edge_detection(self, weight: int = 1):
+    def both_edge_detection(self, weight: int = None):
         tmp_hor = self.convolution(np.array([[0.25, 0, -0.25], [0.50, 0, -0.50], [0.25, 0, -0.25]]))
         tmp_ver = self.convolution(np.array([[0.25, 0.5, 0.25],[0,0,0],[-0.25, -0.5, -0.25]]))
+        if not weight:
+            self.matrix = cv2.add(tmp_hor, tmp_ver)
+            self.image = return_image_from_array(self.matrix)
+            return 
+
         tmp_hor = Image_class_module(tmp_hor)
         w = weight if isinstance(weight, int) else 1
         tmp_hor.remove_range_color_alpha([0,0,0], [w,w,w])
         tmp_ver = Image_class_module(tmp_ver)
         tmp_ver.remove_range_color_alpha([0,0,0], [w,w,w])
-        self.matrix = cv2.add(tmp_hor.matrix, tmp_ver.matrix, self.matrix)
+        self.matrix = cv2.add(tmp_hor.matrix, tmp_ver.matrix)
         self.image = return_image_from_array(self.matrix)
+
+    @time_function
+    def blurr_image(self, strenght: int = 3):
+
+        x_dir: int = 50
+        y_dir: int = 50
+        blurr = np.zeros((strenght, strenght))
+        c = int(strenght / 2)
+        blurr = cv2.line(blurr, (c+x_dir, c+y_dir), (c,c), (255,), 1)
+        blurred = self.convolution(blurr)
+
+        mixed   = cv2.cvtColor(cv2.add(self.matrix, blurred), cv2.COLOR_BGR2RGB)
+        
+        self.update_matrix(mixed)
 
    # TODO: ftm fourier transformation method on image before
    # convolution 
-    @time_function
-    def convolution(self, kernel: np.array) -> np.ndarray:
+    
+    def convolution(self, kernel: np.ndarray) -> np.ndarray:
         x_size, y_size, z_a = self.matrix.shape[1], self.matrix.shape[0], self.matrix.shape[-1]
         z_a = 1 if z_a == x_size else z_a
-
         k_sizeX, k_sizeY = kernel.shape[0], kernel.shape[1]
-        _ = np.zeros((y_size - k_sizeY + 3,
-                     x_size - k_sizeX + 3, 3), dtype=np.uint8)
+        _ = np.zeros((y_size -k_sizeY + 3,
+                     x_size -k_sizeX + 3, 3), dtype=np.uint8)
         
-        for y in range(k_sizeY // 2, y_size - k_sizeY // 2 - 1):
-            for x in range(k_sizeX // 2, x_size - k_sizeX // 2 - 1):
-                try:
-                    values = self.matrix[y-k_sizeY//2:y+k_sizeX//2+1, x-k_sizeX//2:x+k_sizeX//2+1,:]
-                    tmp_0 = (np.dot(values[:,:,0], kernel)).sum().astype(np.uint8)
-                    tmp_1 = (np.dot(values[:,:,1], kernel)).sum().astype(np.uint8)
-                    tmp_2 = (np.dot(values[:,:,2], kernel)).sum().astype(np.uint8)
-                    _[y,x,0] = np.floor(tmp_0 // kernel.size + 2)
-                    _[y,x,1] = np.floor(tmp_1 // kernel.size + 2)
-                    _[y,x,2] = np.floor(tmp_2 // kernel.size + 2)
-                    
-                except IndexError:
-                    values = self.matrix[y-k_sizeY//2:y+k_sizeX//2+1, x-k_sizeX//2:x+k_sizeX//2+1]
-                    tmp_0 = (values[:,:] * kernel).sum().astype(np.uint8)
-                    _[y, x] = np.floor(tmp_0 / kernel.size + 2)
+        if self._mode != 'gray' or not self._mode:
+            for y in range(k_sizeY // 2, y_size - k_sizeY // 2 - 1):
+                for x in range(k_sizeX // 2, x_size - k_sizeX // 2 - 1):
+
+                    try:
+                        values = self.matrix[y-k_sizeY//2:y+k_sizeX//2+1, x-k_sizeX//2:x+k_sizeX//2+1,:]
+                        tmp_0 = (np.dot(values[:,:,0], kernel)).sum().astype(np.uint8)
+                        tmp_1 = (np.dot(values[:,:,1], kernel)).sum().astype(np.uint8)
+                        tmp_2 = (np.dot(values[:,:,2], kernel)).sum().astype(np.uint8)
+                        _[y,x,0] = np.floor(tmp_0 / kernel.size + 2)
+                        _[y,x,1] = np.floor(tmp_1 / kernel.size + 2)
+                        _[y,x,2] = np.floor(tmp_2 / kernel.size + 2)
+                        
+                    except IndexError:
+                        values = self.matrix[y-k_sizeY//2:y+k_sizeX//2+1, x-k_sizeX//2:x+k_sizeX//2+1]
+                        tmp_0 = np.dot(values[:,:], kernel).sum().astype(np.uint8)
+                        _[y, x] = np.floor(tmp_0 / kernel.size + 2)
         
-        return _
+        return _[:y_size,:x_size,:]
        
 
     def set_mode(self, mode: str):
         self._mode = mode if len(mode) <= 4 else None
 
-    def update_image(self, new_image: Image.Image):
+    def update_image(self,new_image: Image.Image = None) -> None:
         self.image = new_image
-        self.matrix = return_array(self.image)
+        self.matrix = return_array(self.image) 
+
+    def update_matrix(self, new_matrix: np.array) -> None:
+        self.matrix = new_matrix if isinstance(new_matrix,np.ndarray) else self.matrix
+
+        self.image  = return_image_from_array(self.matrix)
 
     def save(self, out: str = 'out/new_file.png'):
         self.image.save(out)
@@ -262,14 +290,18 @@ def main(file_dict: dict):
     if file_dict == "!":
         banner_help()
         exit()
+
     if file_dict["GUI"]:
         pass
 
 if __name__ == "__main__":
-    img = Image_class_module('out/carro.jpg')
+    img = Image_class_module('out/car_reduce.png')
     img.update_image(img.image.resize((800, 420)))
-    img.transform_into_gray()
-    img.both_edge_detection(weight=25)
+    #img.transform_into_gray()
+    #img.both_edge_detection()
+    #img.update_matrix(img.matrix.__invert__())
+    img.blurr_image(7)
+
     img.image.save('out/teste01.png')
     print('done')
     _file_ = None
