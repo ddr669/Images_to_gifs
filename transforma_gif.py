@@ -11,19 +11,18 @@ print("\n\r\n\r") # just to keep the pygame welcome ^^
 
 class Image_class_module:
     def __init__(self, img: Any, **kwargs):
-
         self.old_image = None
         self.is_alpha  = False
         self._mode     = None
-      
         if isinstance(img, np.ndarray):
             self.matrix   = img
             self.image    = return_image_from_array(img)
-
-        elif isinstance(img, Image.Image) or isinstance(img, PngImagePlugin.PngImageFile) or isinstance(img, JpegImagePlugin.JpegImageFile):
+        elif isinstance(img,
+            Image.Image) or isinstance(img,
+            PngImagePlugin.PngImageFile) or isinstance(img,
+            JpegImagePlugin.JpegImageFile):
             self.matrix   = return_array(img)
             self.image    = img
-
         elif isinstance(img, str):
             self.image    = Image.open(img)
             self.matrix   = return_array(self.image)
@@ -49,9 +48,7 @@ class Image_class_module:
             tmp = 0
             for _ in range(0, colors):
                 tmp += self.matrix[:,:,_]*gray_multiply[_]
-            
             self.matrix = np.array(tmp/3, dtype=np.uint8)
-
         self.image = return_image_from_array(self.matrix)
 
     def transform_in_alpha(self, matrix: np.ndarray = None, mode: str = 'BGR') -> cv2.Mat:
@@ -126,56 +123,10 @@ class Image_class_module:
             cv2.Mat: Image array like
         '''
         file_ = self.matrix
-        
         lower_target, upper_target = sanitize_ranges(lower_target, upper_target)
         mask = cv2.inRange(file_, lower_target, upper_target)
         del file_, lower_target, upper_target
         return mask
-
-    def insert_imageInCoord(self, over_file: cv2.Mat | np.ndarray, coord: list | tuple = [0,0]) -> Image.Image:
-
-        new_file = self.transform_in_alpha(over_file)
-        tmp_ = self.transform_in_alpha(self.image)
-        new_file_pil = return_image_from_array(new_file)
-        mask = new_file_pil.split()[3]
-        tmp_pil = Image.fromarray(tmp_, 'RGBA') if not self._mode else Image.fromarray(tmp_, self._mode)
-
-        tmp_pil.paste(new_file_pil, coord, mask=mask)
-
-        self.image = tmp_pil
-        self.matrix = return_array(self.image)
-
-        del tmp_, mask, new_file_pil, new_file
-        return tmp_pil
-
-    def merge_array(self,
-                    to_merge: list[np.ndarray] | tuple[np.ndarray] | cv2.Mat | np.ndarray
-                    ):
-        ''' '''
-        self.old_image = self.image 
-        if isinstance(to_merge, np.ndarray):
-            new_ = cv2.merge(to_merge, dst=self.matrix)
-
-        elif isinstance(to_merge, list) or isinstance(to_merge, tuple):
-            tmp = []
-            for _ in to_merge:
-                tmp.append(_)
-            new_ = cv2.merge(tmp, dst=self.matrix)
-
-        elif type(to_merge) == cv2.Mat:
-            try:
-                r,g,b,a = cv2.split(to_merge)
-                new_ = cv2.merge([r,g,b,a], self.matrix)
-            except ValueError:
-                r,g,b = cv2.split(to_merge)
-                new_ = cv2.merge([r,g,b], self.matrix)
-
-        else:
-            
-            new_ =  cv2.merge([self.matrix, to_merge])   
-
-        self.matrix = new_
-        self.image  = return_image_from_array(self.matrix)
 
     def insert_image_in_mask(self,
                             lower_target: list = np.array([0,0,0]),
@@ -219,10 +170,11 @@ class Image_class_module:
             gray_img = cv2.cvtColor(self.matrix, cv2.COLOR_BGR2GRAY)
         else:
             gray_img = cv2.cvtColor(self.matrix, cv2.COLOR_RGB2GRAY) if self._mode == 'RGB' else cv2.cvtColor(self.matrix, cv2.COLOR_BGRA2GRAY)
-
         laplacian = cv2.Laplacian(gray_img, cv2.CV_64F)
         laplacian = np.uint8(np.absolute(laplacian))
-        cv2.imwrite('lap.png',laplacian)
+        return laplacian
+    
+
     @time_function
     def both_edge_detection(self, weight: int = 1):
         tmp_hor = self.convolution(np.array([[0.25, 0, -0.25], [0.50, 0, -0.50], [0.25, 0, -0.25]]))
@@ -232,7 +184,6 @@ class Image_class_module:
         tmp_hor.remove_range_color_alpha([0,0,0], [w,w,w])
         tmp_ver = Image_class_module(tmp_ver)
         tmp_ver.remove_range_color_alpha([0,0,0], [w,w,w])
-        
         self.matrix = cv2.add(tmp_hor.matrix, tmp_ver.matrix, self.matrix)
         self.image = return_image_from_array(self.matrix)
 
@@ -241,8 +192,7 @@ class Image_class_module:
     @time_function
     def convolution(self, kernel: np.array) -> np.ndarray:
         x_size, y_size, z_a = self.matrix.shape[1], self.matrix.shape[0], self.matrix.shape[-1]
-        if x_size == z_a:
-            z_a = 1
+        z_a = 1 if z_a == x_size else z_a
 
         k_sizeX, k_sizeY = kernel.shape[0], kernel.shape[1]
         _ = np.zeros((y_size - k_sizeY + 3,
@@ -252,7 +202,6 @@ class Image_class_module:
             for x in range(k_sizeX // 2, x_size - k_sizeX // 2 - 1):
                 try:
                     values = self.matrix[y-k_sizeY//2:y+k_sizeX//2+1, x-k_sizeX//2:x+k_sizeX//2+1,:]
-                    
                     tmp_0 = (np.dot(values[:,:,0], kernel)).sum().astype(np.uint8)
                     tmp_1 = (np.dot(values[:,:,1], kernel)).sum().astype(np.uint8)
                     tmp_2 = (np.dot(values[:,:,2], kernel)).sum().astype(np.uint8)
@@ -271,31 +220,13 @@ class Image_class_module:
     def set_mode(self, mode: str):
         self._mode = mode if len(mode) <= 4 else None
 
-    # c WINDOWS Fonts TIMES.TTF c WINDOWS Fonts TIMESBD.TTF c WINDOWS Fonts TIMESBI.TTF 
     def update_image(self, new_image: Image.Image):
         self.image = new_image
         self.matrix = return_array(self.image)
 
+    def save(self, out: str = 'out/new_file.png'):
+        self.image.save(out)
 
-def simulate3DOverFlow(file_image: Image.Image | cv2    .Mat,
-                       out: str = 'out/merged_image.png') -> Image.Image:
-    array = return_array(file_image)
-    # redpos, greepos, blupos = ((-2, -2), (2,2), (2,-2))
-    red, green, blue = (array[:,:,0], array[:,:,1], array[:,:,2])
-    _tmp_file_size = Image.open(file_image).size
-    
-    bg = Image.new('RGB', _tmp_file_size, (0,0,0))
-    new_file = merge_array(bg, [blue, green, red])
-
-    bg.paste(Image.fromarray(new_file), (0,0))
-    
-
-    bg.paste(Image.fromarray(cv2.Canny(new_file, 0, 100)), (0,0))
-
-    if out:
-        bg.save(out)
-    return new_file
-#
 
 def make_gif_with_img_func(file,file_name: str = 'out/new_file.gif',
                            over_img = None,
