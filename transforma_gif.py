@@ -72,7 +72,7 @@ class Image_class_module:
                 new_ = cv2.cvtColor(self.matrix, cv2.COLOR_BGR2BGRA)
                 b, g, r, alpha = cv2.split(new_)
 
-            self.matrix, self._mode = cv2.merge([b,g,r,alpha]), 'BGRA' if mode == 'BGR' else cv2.merge([r,g,b,alpha]), 'RGBA'
+            self.matrix, self._mode = (cv2.merge([b,g,r,alpha]), 'BGRA') if mode == 'BGR' else (cv2.merge([r,g,b,alpha]), 'RGBA')
 
             self.image  = return_image_from_array(self.matrix)
             self.is_alpha = True
@@ -224,10 +224,16 @@ class Image_class_module:
         laplacian = np.uint8(np.absolute(laplacian))
         cv2.imwrite('lap.png',laplacian)
     @time_function
-    def both_edge_detection(self):
+    def both_edge_detection(self, weight: int = 1):
         tmp_hor = self.convolution(np.array([[0.25, 0, -0.25], [0.50, 0, -0.50], [0.25, 0, -0.25]]))
         tmp_ver = self.convolution(np.array([[0.25, 0.5, 0.25],[0,0,0],[-0.25, -0.5, -0.25]]))
-        self.matrix = cv2.add(tmp_hor, tmp_ver)
+        tmp_hor = Image_class_module(tmp_hor)
+        w = weight if isinstance(weight, int) else 1
+        tmp_hor.remove_range_color_alpha([0,0,0], [w,w,w])
+        tmp_ver = Image_class_module(tmp_ver)
+        tmp_ver.remove_range_color_alpha([0,0,0], [w,w,w])
+        
+        self.matrix = cv2.add(tmp_hor.matrix, tmp_ver.matrix, self.matrix)
         self.image = return_image_from_array(self.matrix)
 
    # TODO: ftm fourier transformation method on image before
@@ -305,12 +311,7 @@ def make_gif_with_img_func(file,file_name: str = 'out/new_file.gif',
     except AttributeError:
         tmp_file_size = file.size
     direction = 0
-    file_tmp_name = []
-    # TODO
-    #   kwargs.get function with args in a dict to
-    #   run all functions without break nd ways 
-    #   work
-    #
+
     for a in range(0, frames_len):
         if function_draw:
             new_file = function_draw(file, text=kwargs.get('text'))
@@ -334,7 +335,12 @@ def main(file_dict: dict):
         pass
 
 if __name__ == "__main__":
- 
+    img = Image_class_module('out/carro.jpg')
+    img.update_image(img.image.resize((800, 420)))
+    img.transform_into_gray()
+    img.both_edge_detection(weight=25)
+    img.image.save('out/teste01.png')
+    print('done')
     _file_ = None
     try:
         __ = argv[1]
