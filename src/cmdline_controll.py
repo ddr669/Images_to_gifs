@@ -267,7 +267,7 @@ def time_function(func):
             dt_ms = time() - start
             #curr, peak = mem_calc(tracemalloc.get_traced_memory())
 
-            print(f"[func: {func.__qualname__}]: {dt_ms:.8f} ms.")
+            print(f"[func: {func.__qualname__}]: {dt_ms:.f} ms.")
             #print(f"[func usage memory]: current: {curr:8.f}MB; peak: {peak:8.f}MB.")
     
     #tracemalloc.clear_traces()
