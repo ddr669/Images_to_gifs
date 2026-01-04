@@ -300,7 +300,7 @@ if __name__ == "__main__":
     #img.transform_into_gray()
     #img.both_edge_detection()
     #img.update_matrix(img.matrix.__invert__())
-    img.blurr_image(7)
+    img.blurr_image(9)
 
     img.image.save('out/teste01.png')
     print('done')
@@ -311,4 +311,15 @@ if __name__ == "__main__":
     except IndexError as Err:
         _file_ = return_file_()
     app = main(_file_)
-    
+   
+
+
+# TODO replace lists to tuples
+#
+# -
+# rgb to YCbCr
+# y  =  0.299 R + 0.587 G + 0.114 B
+# cb =  -0.1687 R - 0.3313 G + 0.5 B + 128 (?)
+# cr =  0.5 R  - 0.4187 G - 0.0813 B + 128 
+
+ 
