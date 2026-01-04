@@ -316,10 +316,16 @@ if __name__ == "__main__":
 
 # TODO replace lists to tuples
 #
-# -
+# - 1. COLOR SPACE CONVERSION
 # rgb to YCbCr
 # y  =  0.299 R + 0.587 G + 0.114 B
 # cb =  -0.1687 R - 0.3313 G + 0.5 B + 128 (?)
 # cr =  0.5 R  - 0.4187 G - 0.0813 B + 128 
 
+# JPEG TRANSFORM
+# 1. COLOR SPACE CONVERSION
+# 2. CHROMINANCE DOWNSAMPLE
+# 3. DISCRETE COSINE TRANSFORMATION
+# 4. QUANTIZATION
+# 5. RUN LENGTH AND HUFFMAN ENCODING
  
