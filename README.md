@@ -13,9 +13,11 @@ Ideal para criar animações a partir de sequências de imagens (frames), como s
 
 Clone o repositório:
 
-```git clone https://github.com/ddr669/Images_to_gifs.git```
+```git clone https://github.com/ddr669/Images_to_gifs.git```  
+
 ```pip install -r requirements.txt```
 
 # Como usar
 Exemplo básico:
-python main.py --input ./imagens --output animacao.gif --duration 0.5
+
+```python main.py --input ./imagens --output animacao.gif --duration 0.5```
