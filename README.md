@@ -1,37 +1,21 @@
-# Images to gif
+# Images to GIFs
+Ferramenta simples e eficiente para converter múltiplas imagens em um arquivo GIF animado.  
+Ideal para criar animações a partir de sequências de imagens (frames), como screenshots, ilustrações, gráficos ou renderizações.   
 
-```transforma_gif.py```
+# Funcionalidades
 
+- Converte várias imagens em um único GIF animado
+- Permite definir velocidade (duração entre frames)
+- Suporte para diferentes formatos de imagem (PNG, JPG, etc.)
+- Uso simples e direto
 
-<br>
+# Instalação
 
-</div>
+Clone o repositório:
 
----
+```git clone https://github.com/ddr669/Images_to_gifs.git```
+```pip install -r requirements.txt```
 
-<br>
-
-
-
-# some options:   
-   
-   
-### Remove range color.  
-
-
-### Apply alpha.  
-
-
-### Paste Image in another.  
-
-
-### Glitch effect.  
-
-
-### Video Make.  
-
-
-### Create Gif from image or Video.  
-
-    #### Draw function.  
-  
+# Como usar
+Exemplo básico:
+python main.py --input ./imagens --output animacao.gif --duration 0.5
