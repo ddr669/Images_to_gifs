@@ -1,1 +1,38 @@
 
+transform_in_alpha
+'''
+Transform a image into a alpha image using cv2.split
+to add a new channel alpha or get in cv2.Mat BGRA mode  
+if Image dont have alpha channel, convert it using  
+cv2.cvtColor.  
+Parameters
+----------
+mode ( str ): mode to merge channels in matrix.
+'''
+  
+insert_image_in_mask    
+"""
+Insert a image in another by a mask choose by range color.
+Parameters.
+---------
+file ( pygame.Surface | PIL.Image.Image ): base file to insert a bg.
+lower_target ( list | numpy.array ): lower color range to pick.
+upper_targe ( list | numpy.array ): upper color range to pick.
+new_bg_surf ( pygame.Surface | PIL.Image.Image ): file to insert.
+Returns:
+PIL.Image.Image: Image 
+"""
+
+
+create_mask
+''' 
+Using cv2 to select a mask inRange  
+from a image file or frame.  
+Parameters
+----------
+file (PIL.Image.Image | str | cv2.Mat): File Image.
+lower_target (np.array) = np.array([0,0,0]): lower color range.
+upper_target (np.array) = np.array([11,11,11]): upper color range.
+Returns:
+cv2.Mat: Image array like
+'''
