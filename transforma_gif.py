@@ -56,15 +56,7 @@ class Image_class_module:
         self.image = return_image_from_array(self.matrix)
 
     def transform_in_alpha(self, matrix: np.ndarray = None, mode: str = 'BGR') -> cv2.Mat:
-        ''' 
-        Transform a image into a alpha image using cv2.split
-        to add a new channel alpha or get in cv2.Mat BGRA mode  
-        if Image dont have alpha channel, convert it using  
-        cv2.cvtColor.  
-        Parameters
-        ----------
-            mode ( str ): mode to merge channels in matrix.
-        '''
+        
         if not matrix:
             self.old_image = self.image
             try:
@@ -73,7 +65,7 @@ class Image_class_module:
                 new_ = cv2.cvtColor(self.matrix, cv2.COLOR_BGR2BGRA)
                 b, g, r, alpha = cv2.split(new_)
 
-            self.matrix, self._mode = (cv2.merge([b,g,r,alpha]), 'BGRA') if mode == 'BGR' else (cv2.merge([r,g,b,alpha]), 'RGBA')
+            self.matrix, self.mode = (cv2.merge([b,g,r,alpha]), 'BGRA') if mode == 'BGR' else (cv2.merge([r,g,b,alpha]), 'RGBA')
 
             self.image  = return_image_from_array(self.matrix)
             self.is_alpha = True
@@ -87,17 +79,15 @@ class Image_class_module:
                 b, g, r, alpha = cv2.split(new_)
             
             if mode == 'BGR':
-                self._mode = 'BGRA'
+                self.mode = 'BGRA'
             else:
-                self._mode = 'RGBA'
+                self.mode = 'RGBA'
             return cv2.merge([b,g,r,alpha]) if mode == 'BGR' else cv2.merge([r,g,b,alpha])
 
     def remove_range_color_alpha(self,
                                 lower_target: list = np.array([0,0,0,255]),
                                 upper_target: list = np.array([45,45,45,255]),
                                 )->Image.Image:
-        '''   Remove range color and return    '''
-
         self.transform_in_alpha()
         self.is_alpha = True
         if len(lower_target) <= 3 or len(upper_target) <= 3:
@@ -114,19 +104,7 @@ class Image_class_module:
                 lower_target: np.array = np.array([0,0,0]),
                 upper_target: np.array = np.array([11,11,11])
                 ) -> cv2.Mat:
-        ''' 
-        Using cv2 to select a mask inRange  
-        from a image file or frame.  
-
-        Parameters
-        ----------
-            #file (PIL.Image.Image | str | cv2.Mat): File Image.
-            lower_target (np.array) = np.array([0,0,0]): lower color range.
-            upper_target (np.array) = np.array([11,11,11]): upper color range.
-        Returns:
-            cv2.Mat: Image array like
-        '''
-        file_ = self.matrix
+               file_ = self.matrix
         lower_target, upper_target = sanitize_ranges(lower_target, upper_target)
         mask = cv2.inRange(file_, lower_target, upper_target)
         del file_, lower_target, upper_target
@@ -137,19 +115,7 @@ class Image_class_module:
                             upper_target: list = np.array([45,45,45]),
                             new_bg_surf: Surface | Image.Image = None
                             )->Image.Image:
-        """
-        Insert a image in another by a mask choose by range color.
 
-        Parameters.
-        ----------
-            file ( pygame.Surface | PIL.Image.Image ): base file to insert a bg.
-            lower_target ( list | numpy.array ): lower color range to pick.
-            upper_targe ( list | numpy.array ): upper color range to pick.
-            new_bg_surf ( pygame.Surface | PIL.Image.Image ): file to insert.
-
-        Returns:
-            PIL.Image.Image: Image 
-        """
         lower_target, upper_target = sanitize_ranges(lower_target, upper_target)
         rgb = cv2.cvtColor(self.matrix, cv2.COLOR_BGR2RGB)
         mask = create_mask(rgb, lower_target, upper_target)
@@ -170,10 +136,10 @@ class Image_class_module:
         self.image = Image.fromarray(new_rgb).transpose(Image.Transpose.TRANSPOSE)
 
     def sobel_filter(self) -> cv2.Mat:
-        if not self._mode:
+        if not self.mode:
             gray_img = cv2.cvtColor(self.matrix, cv2.COLOR_BGR2GRAY)
         else:
-            gray_img = cv2.cvtColor(self.matrix, cv2.COLOR_RGB2GRAY) if self._mode == 'RGB' else cv2.cvtColor(self.matrix, cv2.COLOR_BGRA2GRAY)
+            gray_img = cv2.cvtColor(self.matrix, cv2.COLOR_RGB2GRAY) if self.mode == 'RGB' else cv2.cvtColor(self.matrix, cv2.COLOR_BGRA2GRAY)
         laplacian = cv2.Laplacian(gray_img, cv2.CV_64F)
         laplacian = np.uint8(np.absolute(laplacian))
         return laplacian
@@ -246,7 +212,7 @@ class Image_class_module:
        
 
     def set_mode(self, mode: str):
-        self._mode = mode if len(mode) <= 4 else None
+        self.mode = mode if len(mode) <= 4 else None
 
     def update_image(self,new_image: Image.Image = None) -> None:
         self.image = new_image
@@ -303,6 +269,8 @@ if __name__ == "__main__":
     img = Image_class_module('out/car_reduce.png')
     img.update_image(img.image.resize((800, 420)))
     #img.transform_into_gray()
+    img2 = Image_class_module(img.sobel_filter())
+    img2.save("out/teste2.png")
 #    img.both_edge_detection()
     img.update_matrix(img.matrix.__invert__())
  #  img.blurr_image(9)
