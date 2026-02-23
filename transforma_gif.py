@@ -11,12 +11,12 @@ print("\n\r\n\r") # just to keep the pygame welcome ^^
 
 class Image_class_module:
     __slots__ = ['old_image', 'is_alpha',
-		 '_mode', 'matrix', 'image']
+		 'mode', 'matrix', 'image']
 
     def __init__(self, img: Any, **kwargs):
         self.old_image = None
         self.is_alpha  = False
-        self._mode     = None
+        self.mode     = None
         if isinstance(img, np.ndarray):
             self.matrix   = img
             self.image    = return_image_from_array(img)
@@ -37,12 +37,12 @@ class Image_class_module:
         
     def transform_into_gray(self, gray_matrix: list | tuple = None):
         gray_multiply = (0.299, 0.587, 0.114, 0.0) if not gray_matrix else gray_matrix
-        if self._mode:
-            if self._mode == 'RGB':
+        if self.mode:
+            if self.mode == 'RGB':
                 self.matrix = cv2.cvtColor(self.matrix, cv2.COLOR_RGB2GRAY)
-            elif self._mode == 'RGBA':
+            elif self.mode == 'RGBA':
                 self.matrix = cv2.cvtColor(self.matrix, cv2.COLOR_RGBA2GRAY)
-            elif self._mode == 'BGRA':
+            elif self.mode == 'BGRA':
                 self.matrix = cv2.cvtColor(self.matrix, cv2.COLOR_BGRA2GRAY)
             else:
                 self.matrix = cv2.cvtColor(self.matrix, cv2.COLOR_BGR2GRAY)
@@ -52,6 +52,7 @@ class Image_class_module:
             for _ in range(0, colors):
                 tmp += self.matrix[:,:,_]*gray_multiply[_]
             self.matrix = np.array(tmp/3, dtype=np.uint8)
+        self.mode = "GRAY"
         self.image = return_image_from_array(self.matrix)
 
     def transform_in_alpha(self, matrix: np.ndarray = None, mode: str = 'BGR') -> cv2.Mat:
@@ -203,23 +204,27 @@ class Image_class_module:
         blurr = np.zeros((strenght, strenght))
         c = int(strenght / 2)
         blurr = cv2.line(blurr, (c+x_dir, c+y_dir), (c,c), (255,), 1)
-        blurred = self.convolution(blurr)
+#        blurred = self.convolution(blurr)
 
-        mixed   = cv2.cvtColor(cv2.add(self.matrix, blurred), cv2.COLOR_BGR2RGB)
+        mixed   = cv2.cvtColor(cv2.add(self.matrix, blurr), cv2.COLOR_BGR2RGB)
         
         self.update_matrix(mixed)
 
    # TODO: ftm fourier transformation method on image before
    # convolution 
-    
+    @time_function
     def convolution(self, kernel: np.ndarray) -> np.ndarray:
-        x_size, y_size, z_a = self.matrix.shape[1], self.matrix.shape[0], self.matrix.shape[-1]
+        x_size = self.matrix.shape[1]
+        y_size = self.matrix.shape[0]
+        z_a = self.matrix.shape[-1]
+
         z_a = 1 if z_a == x_size else z_a
         k_sizeX, k_sizeY = kernel.shape[0], kernel.shape[1]
+
         _ = np.zeros((y_size -k_sizeY + 3,
                      x_size -k_sizeX + 3, 3), dtype=np.uint8)
-        
-        if self._mode != 'gray' or not self._mode:
+
+        if self.mode != 'gray' or self.mode == None:
             for y in range(k_sizeY // 2, y_size - k_sizeY // 2 - 1):
                 for x in range(k_sizeX // 2, x_size - k_sizeX // 2 - 1):
 
@@ -298,9 +303,9 @@ if __name__ == "__main__":
     img = Image_class_module('out/car_reduce.png')
     img.update_image(img.image.resize((800, 420)))
     #img.transform_into_gray()
-    #img.both_edge_detection()
-    #img.update_matrix(img.matrix.__invert__())
-    img.blurr_image(9)
+#    img.both_edge_detection()
+    img.update_matrix(img.matrix.__invert__())
+ #  img.blurr_image(9)
 
     img.image.save('out/teste01.png')
     print('done')
@@ -328,4 +333,4 @@ if __name__ == "__main__":
 # 3. DISCRETE COSINE TRANSFORMATION
 # 4. QUANTIZATION
 # 5. RUN LENGTH AND HUFFMAN ENCODING
- 
+
