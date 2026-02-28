@@ -3,18 +3,57 @@ from PIL import Image, PngImagePlugin, JpegImagePlugin, ImageDraw, ImageFont
 import cv2
 import numpy as np
 from sys import argv
-
-
+from time import time
+#from ..src.config_variables import *
 from pygame import Surface, surfarray, SRCALPHA, font, draw, Rect, image
 from pygame.transform import scale
 from pygame.sprite import Sprite, Group
 
 from random import randint
 from moviepy import AudioFileClip, ImageSequenceClip
+PIXEL_READ_DICT = {'1': (6,4), '2': (8,6),      # more accurate between pixel read but worst in speed (takes a lot of time)
+                   '3': (8,4), '4': (12,8),     # I recommend something between 3 and 4
+                   '5': (16, 8), '6': (14,8),   # this is for perfomace and less accurace
+                   '7': (16, 12), '8': (24, 8), # NO ACCURACE
+                   '9': (24, 16), '10': (64, 24)}
+REDUCE_PIXEL_GIF:int = 0
+PIXEL_READ_COUNTER:int   = 4        # Default 4
+QUANTIZE_IN_SURFACES:int = None     # Warning!
+QUANTIZE_IMAGES_GIF:int  = 126      # Default 186 (0 -> 255): from lower bitmap to better 
+QUANTIZE_IMAGES_VIDEO:int= None     # Default None
+FRAMES_LENGTH_VIDEO_INFO = 0        # Default 0 -> change as a file is set
+#
+REDUCE_PIXEL_GIF:int     = None    # Recommended but not need, 2 is fine to gif
+REDUCE_PIXEL_VIDEO:int   = None     # Not recommended
+FRAME_TO_SKIP = 188 # cannot be 1
+#                
+QUANTIZE_IMAGES_GIF:int  = 126  
+
+def time_function(func):
+    #_mem = tracemalloc.start()
+    #mem_calc = lambda x, y: (x / (1024*1024), y / (1024*1024))
+    def wrapper(*args, **kwargs):
+        start = time()
+
+
+        print(f"[started func: {func.__qualname__}].") #current memory {curr:8.f}MB; peak: {peak:8.f}MB.")
+        
+        try:
+            return func(*args, **kwargs)
+        finally:
+            dt_ms = time() - start
+            #curr, peak = mem_calc(tracemalloc.get_traced_memory())
+
+            print(f"[func: {func.__qualname__}]: {dt_ms:.8f} ms.")
+            #print(f"[func usage memory]: current: {curr:8.f}MB; peak: {peak:8.f}MB.")
+    
+    #tracemalloc.clear_traces()
+    return wrapper
 
 class Sprites_(Sprite):
         def __init__(self, _file: str | Image.Image = None):
             super().__init__()
+            
             if type(_file) == Image.Image:
                 try:
                     self.image = image.frombytes(_file.tobytes(), _file.size,  _file.mode)
@@ -27,7 +66,13 @@ class Sprites_(Sprite):
                 self.image = image.frombytes(_tmp_img.tobytes(), _tmp_img.size,_tmp_img.mode)
                 self.mode = _tmp_img.mode
             else:
-                self.image = image.load(_file)
+                try:
+                    self.image = image.load(_file)
+                except TypeError:
+                    #_tmp_img = Image.fromarray(_file).convert()
+                    self.image = image.frombytes(_file.image.tobytes(), _file.image.size, _file.image.mode)
+
+
             self.rect = self.image.get_rect()    
 
 
@@ -47,14 +92,12 @@ class WithPygame:
         nd save az gif file format.
         '''
         global DEBUG_INFO, FRAMES_LENGTH_VIDEO_INFO, QUANTIZE_IMAGES_GIF, QUANTIZE_IMAGES_VIDEO
-        if DEBUG_INFO:
-            print(f"[VideoReader with open-cv2]: Ini")
-        init_time = time_now()
+        
         cap = cv2.VideoCapture(file)
-        if path_exist(file):
-            pass
-        else:
-            raise FileNotFoundError(f"\n\rFile {file} doesn't exist in actual path: \n\r{GETPWD()}")
+       # if path_exist(file):
+       #     pass
+       # else:
+       #     raise FileNotFoundError(f"\n\rFile {file} doesn't exist in actual path: \n\r{GETPWD()}")
         counter = 0
         sub_counter = 0
         fps_seconds = cap.get(cv2.CAP_PROP_FPS)
@@ -94,10 +137,8 @@ class WithPygame:
             FRAMES = [_ for _ in FRAMES]
         frame0 = FRAMES[0]
         frame0.save(f"{out}",format="GIF",save_all=True,append_images=FRAMES,duration=fps_seconds,loop=0)
-        now_time = time_now()
-        tempo_de_exec = now_time - init_time
-        if DEBUG_INFO:
-            print(f"[VideoReader with open-cv2]: time elapsed -> {tempo_de_exec}")
+
+        
     def make_video_from_video_blitText(
                             file,
                             out: str = "video_as_mp4.mp4",
@@ -118,9 +159,7 @@ class WithPygame:
         '''
         global FRAMES_LENGTH_VIDEO_INFO
         global DEBUG_INFO, FRAME_TO_SKIP
-        if DEBUG_INFO:
-            print(f"[VideoReader with open-cv2]: Ini")
-            init_time = time_now()
+        
         cap = cv2.VideoCapture(file)
         counter = 0
         if end_clip:
@@ -203,12 +242,10 @@ class WithPygame:
         audioclip.duration = scene.duration
         scene.audio = audioclip
         scene.write_videofile(out)
-        now_time = time_now()
-        tempo_de_exec = now_time - init_time
-        if DEBUG_INFO:
-            print(f"[VideoReader with open-cv2]: time elapsed -> {tempo_de_exec}")
+        
         del(FRAMES, scene, frames, audioclip, cap, counter, sub_counter)
         return 0
+    
     def return_surface(size, background_image: Sprites_ = None) -> Surface:
         '''
         Using pygame to return a surface with a Sprite loaded in background.
@@ -253,6 +290,7 @@ class WithPygame:
         surface.blit(text_inplace, coord)
         del _font, text_inplace
         return surface
+    @time_function
     def make_image_from_fontsHASH(file,
                             font_family: str = "lucidaconsole", 
                             font_size: int = 12,
@@ -276,20 +314,17 @@ class WithPygame:
         PIXEL_READ_DICT = PIXEL_READ_DICT
         PIXEL_READ_COUNTER = PIXEL_READ_COUNTER
         sprite_group = Group()
-        if type(file) == Image.Image:
-            file = file.quantize(colors=QUANTIZE_IN_SURFACES).convert("RGB") if QUANTIZE_IN_SURFACES else file
+        
         _img = Sprites_(_file=file)
         sprite_group.add(_img)
-        size = _img.image.get_rect()[2:]
+        size = file.image.size
         arraysurf = Surface((size[0],size[1]), SRCALPHA)
         font_pygame = font.SysFont(font_family, font_size)
         texto = font_pygame.render(text if text else "", True, font_color)
         arraysurf.fill((0,0,0,0))
         sprite_group.draw(arraysurf)
         _tmp = surfarray.array3d(arraysurf)
-        if DEBUG_INFO:
-            print(f"[image:{file}] loaded in memory")
-            init_time = time_now()
+        
         hashmap = {}
         for y in range(1, int(size[1] / 2), PIXEL_READ_DICT[str(PIXEL_READ_COUNTER)][0]):
             hashmap[str(y)] = {}
@@ -331,7 +366,7 @@ class WithPygame:
                 pass
             else:
                 hashmap.pop(str(y)) 
-        chars_ = "" if not text else [letter for letter in text] # ░
+        chars_ = "" if not text else [letter for letter in text] 
         for a in hashmap.keys():
             for x in hashmap[a].keys():
                 if remove_bg:
@@ -341,11 +376,7 @@ class WithPygame:
                     texto = font_pygame.render(_text, True, font_color)
                     arraysurf.blit(texto, (int(x),int(a)))
         _tmp = surfarray.array3d(arraysurf)
-        if DEBUG_INFO:
-            end_time = time_now()
-            if frame_count:
-                print(f"{RED_COLOR}[frame: {frame_count} of {FRAMES_LENGTH_VIDEO_INFO}]{DEFAULT_COLOR}", end="")
-            print(f"{GREEN_COLOR}[IMAGE READ AND OVERWRITED]{DEFAULT_COLOR} {end_time-init_time}")
+       
         imagem_com_texto = Image.fromarray(_tmp)
         view = imagem_com_texto.transpose(Image.Transpose.TRANSPOSE)
         _img.kill()
@@ -354,6 +385,7 @@ class WithPygame:
         del(sprite_group)
         del(_img, arraysurf, font_pygame, texto, _tmp, imagem_com_texto, x, chars_, hashmap)
         return view
+    
     def create_surface(file: str | Image.Image | Surface, size: list | tuple = None) -> list[np.ndarray,str]:
         '''
         Take a file like str | Image.Image or Surface and return a array
