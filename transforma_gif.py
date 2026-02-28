@@ -6,46 +6,30 @@
 from src import *
 from modules import *
 
+
 font.init()
 print("\n\r\n\r") # just to keep the pygame welcome ^^
 
 class Image_class_module:
-    __slots__ = ['old_image', 'is_alpha',
-		 'mode', 'matrix', 'image']
 
-    def __init__(self, img: Any, **kwargs):
+    def __init__(self, img: Any, *args,**kwargs):
         self.old_image = None
         self.is_alpha  = False
-        self.mode     = None
-        if isinstance(img, np.ndarray):
-            self.matrix   = img
-            self.image    = return_image_from_array(img)
-        elif isinstance(img,
-            Image.Image) or isinstance(img,
-            PngImagePlugin.PngImageFile) or isinstance(img,
-            JpegImagePlugin.JpegImageFile):
-            self.matrix   = return_array(img)
-            self.image    = img
-        elif isinstance(img, str):
-            self.image    = Image.open(img)
-            self.matrix   = return_array(self.image)
+        self.matrix, self.image = img_instance(img)
+        self.mode     = self.image.mode
 
+    @time_function
     def draw_line_image(self, coords: list[tuple], color: tuple = (255,255,255), width: int = 2, **kwargs) -> Image.Image:
         self.old_image = self.image
         draw_f = ImageDraw.Draw(self.image)
         draw_f.line(coords, fill=color, width=width)
-        
+    @time_function
     def transform_into_gray(self, gray_matrix: list | tuple = None):
         gray_multiply = (0.299, 0.587, 0.114, 0.0) if not gray_matrix else gray_matrix
         if self.mode:
-            if self.mode == 'RGB':
-                self.matrix = cv2.cvtColor(self.matrix, cv2.COLOR_RGB2GRAY)
-            elif self.mode == 'RGBA':
-                self.matrix = cv2.cvtColor(self.matrix, cv2.COLOR_RGBA2GRAY)
-            elif self.mode == 'BGRA':
-                self.matrix = cv2.cvtColor(self.matrix, cv2.COLOR_BGRA2GRAY)
-            else:
-                self.matrix = cv2.cvtColor(self.matrix, cv2.COLOR_BGR2GRAY)
+            color_cc = verify_mode2gray(self.image)
+            self.matrix = cv2.cvtColor(self.matrix, color_cc)
+            
         else:
             colors = self.matrix.shape[-1]
             tmp = 0
@@ -55,87 +39,38 @@ class Image_class_module:
         self.mode = "GRAY"
         self.image = return_image_from_array(self.matrix)
 
-    def transform_in_alpha(self, matrix: np.ndarray = None, mode: str = 'BGR') -> cv2.Mat:
-        
-        if not matrix:
-            self.old_image = self.image
-            try:
-                b, g, r, alpha = cv2.split(self.matrix)
-            except ValueError:
-                new_ = cv2.cvtColor(self.matrix, cv2.COLOR_BGR2BGRA)
-                b, g, r, alpha = cv2.split(new_)
+    @time_function
+    def transform_in_alpha(self) -> cv2.Mat:
+    
+        self.old_image = self.image
+        new_ = cv2.cvtColor(self.matrix, verify_mode2rgba(self.image))
+         
+        self.matrix, self.mode = (new_, 'RGBA')
+        self.image  = return_image_from_array(self.matrix)
+        self.is_alpha = True
 
-            self.matrix, self.mode = (cv2.merge([b,g,r,alpha]), 'BGRA') if mode == 'BGR' else (cv2.merge([r,g,b,alpha]), 'RGBA')
-
-            self.image  = return_image_from_array(self.matrix)
-            self.is_alpha = True
-            return 0
-
-        else:
-            try:
-                b, g, r, alpha = cv2.split(matrix)
-            except ValueError:
-                new_ = cv2.cvtColor(matrix , cv2.COLOR_BGR2BGRA)
-                b, g, r, alpha = cv2.split(new_)
             
-            if mode == 'BGR':
-                self.mode = 'BGRA'
-            else:
-                self.mode = 'RGBA'
-            return cv2.merge([b,g,r,alpha]) if mode == 'BGR' else cv2.merge([r,g,b,alpha])
-
+    @time_function
     def remove_range_color_alpha(self,
                                 lower_target: list = np.array([0,0,0,255]),
                                 upper_target: list = np.array([45,45,45,255]),
                                 )->Image.Image:
-        self.transform_in_alpha()
-        self.is_alpha = True
+        self.transform_in_alpha()        
         if len(lower_target) <= 3 or len(upper_target) <= 3:
             upper_target.append(255)
             lower_target.append(255)
+
         lower_target, upper_target = sanitize_ranges(lower_target, upper_target)
         rgb = cv2.cvtColor(self.matrix, cv2.COLOR_BGRA2RGBA)
         mask = create_mask(rgb, lower_target, upper_target)
-        self.matrix = cv2.bitwise_not(rgb,rgb, mask=mask) 
+        #self.matrix = cv2.bitwise_not(rgb,rgb, mask=mask) 
+        self.matrix = cv2.absdiff(rgb, mask)
         self.image = return_image_from_array(self.matrix)
-        return Image.fromarray(self.matrix, 'RGBA')
 
-    def create_mask(self,
-                lower_target: np.array = np.array([0,0,0]),
-                upper_target: np.array = np.array([11,11,11])
-                ) -> cv2.Mat:
-               file_ = self.matrix
-        lower_target, upper_target = sanitize_ranges(lower_target, upper_target)
-        mask = cv2.inRange(file_, lower_target, upper_target)
-        del file_, lower_target, upper_target
-        return mask
+        return self.image
 
-    def insert_image_in_mask(self,
-                            lower_target: list = np.array([0,0,0]),
-                            upper_target: list = np.array([45,45,45]),
-                            new_bg_surf: Surface | Image.Image = None
-                            )->Image.Image:
-
-        lower_target, upper_target = sanitize_ranges(lower_target, upper_target)
-        rgb = cv2.cvtColor(self.matrix, cv2.COLOR_BGR2RGB)
-        mask = create_mask(rgb, lower_target, upper_target)
-        new_rgb = cv2.bitwise_and(rgb, rgb, mask=mask)
-
-        if new_bg_surf:
-            bg_temp = return_array(new_bg_surf)
-            if self.matrix.size < bg_temp.size:    
-                _temp = return_image_from_array(self.matrix).convert()
-                bg_temp = Image.fromarray(bg_temp).resize(_temp.size)
-                
-                bg_temp = return_array(bg_temp)
-            new_bg = cv2.cvtColor(bg_temp, cv2.COLOR_BGR2RGB)
-            new_bg = cv2.bitwise_and(new_bg, new_bg, mask=mask)
-            new_rgb = cv2.add(new_bg,rgb - new_rgb)
-
-        self.matrix = new_rgb
-        self.image = Image.fromarray(new_rgb).transpose(Image.Transpose.TRANSPOSE)
-
-    def sobel_filter(self) -> cv2.Mat:
+    @time_function
+    def sobel_filter(self, *args, **kwagrs) -> cv2.Mat:
         if not self.mode:
             gray_img = cv2.cvtColor(self.matrix, cv2.COLOR_BGR2GRAY)
         else:
@@ -164,14 +99,12 @@ class Image_class_module:
 
     @time_function
     def blurr_image(self, strenght: int = 3):
-
         x_dir: int = 50
         y_dir: int = 50
         blurr = np.zeros((strenght, strenght))
         c = int(strenght / 2)
         blurr = cv2.line(blurr, (c+x_dir, c+y_dir), (c,c), (255,), 1)
 #        blurred = self.convolution(blurr)
-
         mixed   = cv2.cvtColor(cv2.add(self.matrix, blurr), cv2.COLOR_BGR2RGB)
         
         self.update_matrix(mixed)
@@ -216,17 +149,53 @@ class Image_class_module:
 
     def update_image(self,new_image: Image.Image = None) -> None:
         self.image = new_image
-        self.matrix = return_array(self.image) 
+        self.matrix = np.array(self.image)
 
     def update_matrix(self, new_matrix: np.array) -> None:
         self.matrix = new_matrix if isinstance(new_matrix,np.ndarray) else self.matrix
-
         self.image  = return_image_from_array(self.matrix)
 
     def save(self, out: str = 'out/new_file.png'):
         self.image.save(out)
 
+@time_function
+def remove_range_color_alpha(image: Image_class_module,
+                            lower_target: list = np.array([0,0,0,255]),
+                            upper_target: list = np.array([45,45,45,255]),
+                            **kwargs
+                            )->Image.Image:
+    
+    image.transform_in_alpha()
+    
+    image.is_alpha = True
+    if len(lower_target) <= 3 or len(upper_target) <= 3:
+        try:
+            if len(upper_target) != 4:
+                upper_target.append(255)
+            if len(lower_target) != 4:
+                lower_target.append(255)
+        except AttributeError:
+            if len(upper_target) != 4:
+                upper_target = upper_target.add(255)
+            if len(lower_target) != 4:
+                lower_target = lower_target.add(255)
+    lower_target, upper_target = sanitize_ranges(lower_target, upper_target)
+    rgb = cv2.cvtColor(image.matrix, cv2.COLOR_BGRA2RGBA)
+    mask = create_mask(rgb, lower_target, upper_target)
+    image.matrix = cv2.bitwise_not(image.matrix,rgb, mask=mask)
+    image.old_image = image.image
+    image.image = return_image_from_array(image.matrix)
 
+    return image.image
+
+@time_function
+def draw_line_image(image, coords: list[tuple], color: tuple = (255,255,255), width: int = 2, **kwargs) -> Image.Image:
+        #self.old_image = self.image
+        draw_f = ImageDraw.Draw(image.image)
+        draw_f.line(coords, fill=color, width=width)
+        return image.image
+
+@time_function
 def make_gif_with_img_func(file,file_name: str = 'out/new_file.gif',
                            over_img = None,
                            coord: list | tuple = [0,0],
@@ -235,25 +204,23 @@ def make_gif_with_img_func(file,file_name: str = 'out/new_file.gif',
                            animation_speed: list = [0,1],
                            effect: bool = False,
                            **kwargs):
-    FRAMES = []
-    try:
-        tmp_file_size = Image.open(file).size
-    except AttributeError:
-        tmp_file_size = file.size
+    frames = [0 for a in range(0, frames_len)]
     direction = 0
 
     for a in range(0, frames_len):
-        if function_draw:
-            new_file = function_draw(file, text=kwargs.get('text'))
-            
-        else:
+        new_file = function_draw(file, **kwargs)
+        frames[a] = new_file
 
-            new_file = function_draw(file)
-        FRAMES.append(new_file)
-    frame0 = FRAMES[0]
-    frame0.save(file_name, format="GIF", save_all=True, append_images=FRAMES, duration=frames_len, loop=0)
+    try:
+        frame0 = frames[0]
+        frame0.save(file_name, format="GIF", save_all=True, append_images=frames, duration=frames_len, loop=0)
 
-    del frame0, tmp_file_size, direction, function_draw, FRAMES
+    except AttributeError:
+        frames = [Image.fromarray(frames[_]) for _ in range(0, len(frames))]
+        frame0 = frames[0]
+        frame0.save(file_name, format="GIF", save_all=True, append_images=frames, duration=frames_len, loop=0)
+
+
 
 
 def main(file_dict: dict):
@@ -268,11 +235,15 @@ def main(file_dict: dict):
 if __name__ == "__main__":
     img = Image_class_module('out/car_reduce.png')
     img.update_image(img.image.resize((800, 420)))
-    #img.transform_into_gray()
-    img2 = Image_class_module(img.sobel_filter())
-    img2.save("out/teste2.png")
-#    img.both_edge_detection()
-    img.update_matrix(img.matrix.__invert__())
+    new = Image_class_module('out/gato_reduzido.png')
+   # img2 = WithPygame.make_image_from_fontsHASH(img, text="oi")
+    start = [0, 0]
+    end = [255, 255]
+    make_gif_with_img_func(img, function_draw=draw_line_image, coords=[start,end])
+    #img2 = Image_class_module(img.sobel_filter())
+    #img2.save("out/teste2.png")
+
+    #img.update_matrix(img.matrix.__invert__())
  #  img.blurr_image(9)
 
     img.image.save('out/teste01.png')
