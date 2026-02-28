@@ -257,8 +257,8 @@ def time_function(func):
     #mem_calc = lambda x, y: (x / (1024*1024), y / (1024*1024))
     def wrapper(*args, **kwargs):
         start = time()
-        #curr, peak = mem_calc(tracemalloc.get_traced_memory())
-        
+
+
         print(f"[started func: {func.__qualname__}].") #current memory {curr:8.f}MB; peak: {peak:8.f}MB.")
         
         try:
