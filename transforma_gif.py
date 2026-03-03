@@ -7,7 +7,6 @@ from src import *
 from modules import *
 
 
-font.init()
 print("\n\r\n\r") # just to keep the pygame welcome ^^
 
 class Image_class_module:
@@ -41,33 +40,32 @@ class Image_class_module:
 
     @time_function
     def transform_in_alpha(self) -> cv2.Mat:
-    
-        self.old_image = self.image
         new_ = cv2.cvtColor(self.matrix, verify_mode2rgba(self.image))
-         
         self.matrix, self.mode = (new_, 'RGBA')
         self.image  = return_image_from_array(self.matrix)
         self.is_alpha = True
-
             
     @time_function
     def remove_range_color_alpha(self,
                                 lower_target: list = np.array([0,0,0,255]),
                                 upper_target: list = np.array([45,45,45,255]),
                                 )->Image.Image:
-        self.transform_in_alpha()        
+        if not self.is_alpha:
+            self.transform_in_alpha()        
+
         if len(lower_target) <= 3 or len(upper_target) <= 3:
+
             upper_target.append(255)
             lower_target.append(255)
 
         lower_target, upper_target = sanitize_ranges(lower_target, upper_target)
-        rgb = cv2.cvtColor(self.matrix, cv2.COLOR_BGRA2RGBA)
+        rgb =  cv2.cvtColor(self.matrix, cv2.COLOR_BGRA2RGBA)
         mask = create_mask(rgb, lower_target, upper_target)
-        #self.matrix = cv2.bitwise_not(rgb,rgb, mask=mask) 
         self.matrix = cv2.absdiff(rgb, mask)
+        self.matrix = cv2.cvtColor(self.matrix, cv2.COLOR_BGRA2RGBA)
         self.image = return_image_from_array(self.matrix)
-
         return self.image
+
 
     @time_function
     def sobel_filter(self, *args, **kwagrs) -> cv2.Mat:
@@ -164,10 +162,10 @@ def remove_range_color_alpha(image: Image_class_module,
                             upper_target: list = np.array([45,45,45,255]),
                             **kwargs
                             )->Image.Image:
-    
-    image.transform_in_alpha()
-    
-    image.is_alpha = True
+    if not image.is_alpha: 
+        image.transform_in_alpha()
+        image.is_alpha = True
+
     if len(lower_target) <= 3 or len(upper_target) <= 3:
         try:
             if len(upper_target) != 4:
@@ -184,13 +182,14 @@ def remove_range_color_alpha(image: Image_class_module,
     mask = create_mask(rgb, lower_target, upper_target)
     image.matrix = cv2.bitwise_not(image.matrix,rgb, mask=mask)
     image.old_image = image.image
-    image.image = return_image_from_array(image.matrix)
+    image.image = return_image_from_array(
+        cv2.cvtColor(image.matrix, cv2.COLOR_BGRA2RGBA))
 
     return image.image
 
 @time_function
 def draw_line_image(image, coords: list[tuple], color: tuple = (255,255,255), width: int = 2, **kwargs) -> Image.Image:
-        #self.old_image = self.image
+
         draw_f = ImageDraw.Draw(image.image)
         draw_f.line(coords, fill=color, width=width)
         return image.image
@@ -236,12 +235,12 @@ if __name__ == "__main__":
     img = Image_class_module('out/car_reduce.png')
     img.update_image(img.image.resize((800, 420)))
     new = Image_class_module('out/gato_reduzido.png')
-   # img2 = WithPygame.make_image_from_fontsHASH(img, text="oi")
+    img2 = WithPygame.make_image_from_fontsHASH(img, text="oi")
     start = [0, 0]
     end = [255, 255]
-    make_gif_with_img_func(img, function_draw=draw_line_image, coords=[start,end])
+    make_gif_with_img_func(img, function_draw=remove_range_color_alpha, coords=[start,end])
     #img2 = Image_class_module(img.sobel_filter())
-    #img2.save("out/teste2.png")
+    img2.save("out/teste2.png")
 
     #img.update_matrix(img.matrix.__invert__())
  #  img.blurr_image(9)
