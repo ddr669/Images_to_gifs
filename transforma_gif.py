@@ -18,11 +18,6 @@ class Image_class_module:
         self.mode     = self.image.mode
 
     @time_function
-    def draw_line_image(self, coords: list[tuple], color: tuple = (255,255,255), width: int = 2, **kwargs) -> Image.Image:
-        self.old_image = self.image
-        draw_f = ImageDraw.Draw(self.image)
-        draw_f.line(coords, fill=color, width=width)
-    @time_function
     def transform_into_gray(self, gray_matrix: list | tuple = None):
         gray_multiply = (0.299, 0.587, 0.114, 0.0) if not gray_matrix else gray_matrix
         if self.mode:
@@ -40,32 +35,11 @@ class Image_class_module:
 
     @time_function
     def transform_in_alpha(self) -> cv2.Mat:
-        new_ = cv2.cvtColor(self.matrix, verify_mode2rgba(self.image))
+        new_ = None
         self.matrix, self.mode = (new_, 'RGBA')
         self.image  = return_image_from_array(self.matrix)
         self.is_alpha = True
             
-    @time_function
-    def remove_range_color_alpha(self,
-                                lower_target: list = np.array([0,0,0,255]),
-                                upper_target: list = np.array([45,45,45,255]),
-                                )->Image.Image:
-        if not self.is_alpha:
-            self.transform_in_alpha()        
-
-        if len(lower_target) <= 3 or len(upper_target) <= 3:
-
-            upper_target.append(255)
-            lower_target.append(255)
-
-        lower_target, upper_target = sanitize_ranges(lower_target, upper_target)
-        rgb =  cv2.cvtColor(self.matrix, cv2.COLOR_BGRA2RGBA)
-        mask = create_mask(rgb, lower_target, upper_target)
-        self.matrix = cv2.absdiff(rgb, mask)
-        self.matrix = cv2.cvtColor(self.matrix, cv2.COLOR_BGRA2RGBA)
-        self.image = return_image_from_array(self.matrix)
-        return self.image
-
 
     @time_function
     def sobel_filter(self, *args, **kwagrs) -> cv2.Mat:
@@ -141,10 +115,6 @@ class Image_class_module:
         
         return _[:y_size,:x_size,:]
        
-
-    def set_mode(self, mode: str):
-        self.mode = mode if len(mode) <= 4 else None
-
     def update_image(self,new_image: Image.Image = None) -> None:
         self.image = new_image
         self.matrix = np.array(self.image)
@@ -155,6 +125,53 @@ class Image_class_module:
 
     def save(self, out: str = 'out/new_file.png'):
         self.image.save(out)
+
+@time_function
+def blit_text_inrange(image: Image_class_module,
+                            lower_target: list = np.array([0,0,0,255]),
+                            upper_target: list = np.array([45,45,45,255]),
+                            **kwargs)->Image.Image:
+    bg_color = (lower_target[0],lower_target[1],lower_target[2], 255)
+    text_img = Image.new('RGBA', image.image.size, bg_color)
+    old_text = "hello"
+    draw = ImageDraw.Draw(text_img)
+    
+    k_items = kwargs.keys()
+    if 'text' in k_items:
+        text = kwargs.get('text')
+        if 'loop' in k_items and kwargs.get('loop') == True:
+            text += "\n"
+            if len(text) <= image.image.size[0]:
+                for b in range(0, image.image.size[1], 12):
+                    for a in range(0, image.image.size[0],8):
+                        text += " " + kwargs.get('text') + " "
+                    text += "\n"
+    else:
+        text = ''
+        for b in range(0, image.image.size[1], 8):
+            for a in range(0, image.image.size[0], 8):
+                text += " " + str(chr(randint(33, 122))) + " " # chr range for visual character
+            text += '\n'
+
+    #font = ImageFont.truetype("Tests/fonts/FreeMono.ttf", 24)
+    
+
+    draw.text((0,0), text)
+    lower_target, upper_target = sanitize_ranges(lower_target, upper_target)
+    rgb = cv2.cvtColor(image.matrix, cv2.COLOR_BGRA2RGBA)
+    txt = cv2.cvtColor(np.array(text_img), cv2.COLOR_BGRA2RGBA)
+    mask = create_mask(rgb, lower_target, upper_target)
+    inv_mask  = cv2.bitwise_not(mask)
+    fg_masked = cv2.bitwise_and(rgb,rgb,mask=inv_mask)
+    bg_masked = cv2.bitwise_and(txt,txt,mask=mask)
+    
+    tmp2 = cv2.add( fg_masked, bg_masked)
+
+    image.image = return_image_from_array(cv2.cvtColor(tmp2,cv2.COLOR_BGRA2RGBA))
+    image.matrix = tmp2
+
+    return image.image
+
 
 @time_function
 def remove_range_color_alpha(image: Image_class_module,
@@ -199,33 +216,32 @@ def make_gif_with_img_func(file,file_name: str = 'out/new_file.gif',
                            over_img = None,
                            coord: list | tuple = [0,0],
                            function_draw = None,
-                           frames_len: int = 90,
+                           frames_len: int = 10,
                            animation_speed: list = [0,1],
                            effect: bool = False,
                            **kwargs):
-    frames = [0 for a in range(0, frames_len)]
+    frames = []
     direction = 0
 
     for a in range(0, frames_len):
         new_file = function_draw(file, **kwargs)
-        frames[a] = new_file
+        frames.append(new_file)
 
     try:
         frame0 = frames[0]
         frame0.save(file_name, format="GIF", save_all=True, append_images=frames, duration=frames_len, loop=0)
 
     except AttributeError:
-        frames = [Image.fromarray(frames[_]) for _ in range(0, len(frames))]
+        frames = [Image.fromarray(_) for _ in frames]
         frame0 = frames[0]
-        frame0.save(file_name, format="GIF", save_all=True, append_images=frames, duration=frames_len, loop=0)
-
-
-
+        frame0.save(file_name, format="GIF" ,save_all=True, append_images=frames, duration=frames_len, loop=0)
 
 def main(file_dict: dict):
     print(file_dict) if file_dict != "!" else None
+    Config_Variables.SHOW_BANNER = False
     if file_dict == "!":
-        banner_help()
+        if Config_Variables.SHOW_BANNER:
+            banner_help()
         exit()
 
     if file_dict["GUI"]:
@@ -234,17 +250,15 @@ def main(file_dict: dict):
 if __name__ == "__main__":
     img = Image_class_module('out/car_reduce.png')
     img.update_image(img.image.resize((800, 420)))
+    blit_text_inrange(img, text="eduardo", loop=1)
     new = Image_class_module('out/gato_reduzido.png')
-    img2 = WithPygame.make_image_from_fontsHASH(img, text="oi")
-    start = [0, 0]
-    end = [255, 255]
-    make_gif_with_img_func(img, function_draw=remove_range_color_alpha, coords=[start,end])
+    start = [0, 255]
+    end = [800, 255]
+    make_gif_with_img_func(img, function_draw=draw_line_image, coords=[start,end])
     #img2 = Image_class_module(img.sobel_filter())
-    img2.save("out/teste2.png")
+    #img2.save("out/teste2.png")
 
-    #img.update_matrix(img.matrix.__invert__())
  #  img.blurr_image(9)
-
     img.image.save('out/teste01.png')
     print('done')
     _file_ = None
@@ -255,20 +269,4 @@ if __name__ == "__main__":
         _file_ = return_file_()
     app = main(_file_)
    
-
-
-# TODO replace lists to tuples
-#
-# - 1. COLOR SPACE CONVERSION
-# rgb to YCbCr
-# y  =  0.299 R + 0.587 G + 0.114 B
-# cb =  -0.1687 R - 0.3313 G + 0.5 B + 128 (?)
-# cr =  0.5 R  - 0.4187 G - 0.0813 B + 128 
-
-# JPEG TRANSFORM
-# 1. COLOR SPACE CONVERSION
-# 2. CHROMINANCE DOWNSAMPLE
-# 3. DISCRETE COSINE TRANSFORMATION
-# 4. QUANTIZATION
-# 5. RUN LENGTH AND HUFFMAN ENCODING
 
