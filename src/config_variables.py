@@ -1,5 +1,6 @@
 
 class Config_Variables:
+    SHOW_BANNER: bool = True
     FRAME_TO_SKIP = 188 # cannot be 1
     #                          y,x      y,x to text weight
     PIXEL_READ_DICT = {'1': (6,4), '2': (8,6),      # more accurate between pixel read but worst in speed (takes a lot of time)
