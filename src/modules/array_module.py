@@ -1,6 +1,10 @@
-from PIL import Image, PngImagePlugin, JpegImagePlugin
+from PIL import Image, PngImagePlugin
+from PIL import JpegImagePlugin, JpegImagePlugin, ImageDraw, ImageFont, ImageText
+
 import cv2
 import numpy as np
+#from sys import argv
+#from time import time
 
 def return_array(file: str | Image.Image) -> np.ndarray:
     if isinstance(file, np.ndarray):
