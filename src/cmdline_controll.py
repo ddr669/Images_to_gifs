@@ -5,7 +5,6 @@
 
 from time import sleep, time
 
-import tracemalloc
 from sys import stdout, argv as args
 from typing import Any
 
@@ -100,7 +99,6 @@ def animation_cmd(banner: list[str]):
     width = len(banner[0])
     height = len(banner)
     print()
-    # draw (*) verticaly upside down 
     for h in range(0, height):
         for w in range(0, width):
             # caution with the invisible emoji
@@ -110,7 +108,6 @@ def animation_cmd(banner: list[str]):
         sleep(0.0000001)
         stdout.write('\n')
         stdout.flush()
-    # draw (banner) verticaly downside up
     for _ in range(h, -1, -1):
         sleep(0.0000005)
         stdout.write('\033[F'*2)
@@ -260,7 +257,7 @@ def time_function(func):
             return func(*args, **kwargs)
         finally:
             dt_ms = time() - start
-            print(f"[func: {func.__qualname__}]: {dt_ms:.8f} ms.")
+            print(f"[end func: {func.__qualname__}]: {dt_ms:.8f} ms.")
     
     return wrapper
 
