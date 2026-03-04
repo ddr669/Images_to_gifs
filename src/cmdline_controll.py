@@ -8,6 +8,10 @@ from time import sleep, time
 from sys import stdout, argv as args
 from typing import Any
 
+class Debug:
+    DEBUG_MODE: int = 1
+
+
 BOLD_HIGH = lambda x: f"\033[1m{x}\033[0m"
 DARK_HIGH = lambda x: f"\033[2m{x}\033[0m"
 ITALIC_HI = lambda x: f"\033[3m{x}\033[0m"
@@ -24,7 +28,6 @@ COLOR_SCHEME_DICT    = {"black": BLACK_RANGE_COLOR,
                         "red": RED_RANGE_COLOR,
                         "green": GREEN_RANGE_COLOR,
                         }
-
 BOLD_HIGH = lambda x: f"\033[1m{x}\033[0m"
 ITALIC_HIGH = lambda x: f"\033[3m{x}\033[0m"
 SHADOW_HIGH = lambda x: f"\033[2m{x}\033[0m"
@@ -90,12 +93,6 @@ KWARGS_DICT = {
 }
 
 def animation_cmd(banner: list[str]):
-    """
-    just a ascii animation before ascii main banner.
-    * invisible ascii char, unknown behavor.
-    >>> animation_cmd()
-    ... 
-    """
     width = len(banner[0])
     height = len(banner)
     print()
@@ -119,51 +116,31 @@ def animation_cmd(banner: list[str]):
     stdout.flush()
 
 def anima_options(options: list[str]):
-    """
-        draw text module options and functions.
-        >>> anima_options(OPTIONS) 
-        ... 
-    """
     for _ in options:
         sleep(0.00003)
         stdout.write(_+'\n')
         stdout.flush()
 
 def animation_banner():
-    """ help """
     animation_cmd(BANNER)
     anima_options(OPTIONS)
 
 def kwargs_getAndSet(params: dict[Any, Any], **kwargs)->dict[str, Any]:
-    
     for _ in KWARGS_DICT.keys():
         value = None
         if isinstance(params, dict):
             value = params.fromkeys(_)
 
         kwargs[_] = KWARGS_DICT[_] if not value else value
-
-
     return kwargs
 
 def banner_help(_baner_: bool = True) -> int:
-    """ 
-    BANNNER
-    usage before anima_options.
-    >>> banner_help()
-    ... 0
-    """
     animation_banner()
     print("\n")
     print("usage transforma_gif.py -f image_file.png --transform_func={PARAMS} -o new_file.gif")
     return 0
 
 def return_file_() -> dict:
-    """
-    first run at call in cmdline.
-    :return: <dict[Any, Any]> *kwargs
-    """
-
     _ = {   "framerate": None, 
             "out_path": "out/",
             "GUI": False}       
@@ -246,19 +223,21 @@ def cmdline_verify(array: list) -> dict:
             counter += 1
 
     _['edits_files'] = files
-    
     return _
 
 def time_function(func):
     def wrapper(*args, **kwargs):
-        start = time()
-        print(f"[started func: {func.__qualname__}].")
+        debug_mode = Debug.DEBUG_MODE
+        if debug_mode >= 1:
+            start = time()
+            print(f"[started func: {func.__qualname__}].")
         try:
             return func(*args, **kwargs)
         finally:
-            dt_ms = time() - start
-            print(f"[end func: {func.__qualname__}]: {dt_ms:.8f} ms.")
-    
+            if debug_mode >= 1:
+                dt_ms = time() - start
+                print(f"[end func: {func.__qualname__}]: {dt_ms:.8f} ms.")
+        
     return wrapper
 
 if __name__ == '__main__':
