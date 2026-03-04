@@ -43,23 +43,18 @@ def main(file_dict: dict):
 if __name__ == "__main__":
     img = Image_class_module('out/car_reduce.png')
     img.update_image(img.image.resize((800, 420)))
-    #blit_text_inrange(img, text="eduardo", loop=1, rm_bg=True)
     new = Image_class_module('out/gato_reduzido.png')
     start = [0, 255]
     end = [800, 255]
     make_gif_with_img_func(img, function_draw=blit_text_inrange)
-    #img2 = Image_class_module(img.sobel_filter())
-    #img2.save("out/teste2.png")
-
- #  img.blurr_image(9)
     img.image.save('out/teste01.png')
     print('done')
-    _file_ = None
+    file = None
     try:
-        __ = argv[1]
-        _file_ = cmdline_verify(argv)
+        test_args = argv[1]
+        file = cmdline_verify(argv)
     except IndexError as Err:
-        _file_ = return_file_()
-    app = main(_file_)
+        file = return_file_()
+    app = main(file)
    
 
