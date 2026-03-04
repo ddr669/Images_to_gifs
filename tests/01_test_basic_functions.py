@@ -1,50 +1,14 @@
 
 from PIL import Image, PngImagePlugin, JpegImagePlugin, ImageDraw, ImageFont, ImageText
 import cv2
-import numpy as np
-from sys import argv
-from time import time
+
 from pygame import Surface, surfarray, SRCALPHA, draw, Rect, image
-
-from pygame.transform import scale
-from pygame.sprite import Sprite, Group
-
-class Sprites_(Sprite):
-        def __init__(self, _file: str | Image.Image = None):
-            super().__init__()
-            
-            if type(_file) == Image.Image:
-                try:
-                    self.image = image.frombytes(_file.tobytes(), _file.size,  _file.mode)
-                    self.mode = _file.mode
-                except ValueError:
-                    self.image = image.frombytes(_file.tobytes(), _file.size, 'RGB')
-                    self.mode = 'RGB'
-            elif type(_file) == np.ndarray:
-                _tmp_img = Image.fromarray(_file).convert()
-                self.image = image.frombytes(_tmp_img.tobytes(), _tmp_img.size,_tmp_img.mode)
-                self.mode = _tmp_img.mode
-            else:
-                try:
-                    self.image = image.load(_file)
-                except TypeError:
-                    #_tmp_img = Image.fromarray(_file).convert()
-                    self.image = image.frombytes(_file.image.tobytes(), _file.image.size, _file.image.mode)
-
-
-            self.rect = self.image.get_rect()    
-
 
 class WithPygame:
     def make_gif_from_video( 
                         file, out: str = "video_as_gif.gif",
                         frame_counter: int = 90, text: str = "10",
-                        font_color: tuple = (0,0,0),
-                        lower_color: list = np.array([140,140,140]),
-                        upper_color: list = np.array([220,220,220]),
-                        remove_bg: bool = False,
-                        new_bg_color: tuple = (),
-                        resize_new_file: bool = False) -> None:
+                        font_color: tuple = (0,0,0)) -> None:
 
         cap = cv2.VideoCapture(file)
         counter = 0
