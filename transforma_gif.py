@@ -4,6 +4,11 @@
 #-*-Date:__/__/__-*-
 from src import *
 
+Config_Variables.SHOW_BANNER = 1 # use this to *SHOW* the banner and help after terminate
+Config_Variables.SHOW_BANNER = 0 # use this to avoid banner and help 
+Debug.DEBUG_MODE = 0 # Use this to remove debug mode
+Debug.DEBUG_MODE = 1 # use this to debug the program
+
 @time_function
 def make_gif_with_img_func(file,file_name: str = 'out/new_file.gif',
                            over_img = None,
@@ -30,7 +35,7 @@ def make_gif_with_img_func(file,file_name: str = 'out/new_file.gif',
         frame0.save(file_name, format="GIF" ,save_all=True, append_images=frames, duration=frames_len, loop=0)
 
 def main(file_dict: dict):
-    Config_Variables.SHOW_BANNER = False
+    
     if file_dict == "!":
         if Config_Variables.SHOW_BANNER:
             banner_help()
