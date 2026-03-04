@@ -36,3 +36,14 @@ upper_target (np.array) = np.array([11,11,11]): upper color range.
 Returns:
 cv2.Mat: Image array like
 '''
+""" Make a image with file image or surface, and a
+new_bg image to create a mask to glitch at all.
+Parameters.
+----------
+    file ( pygame.Surface | PIL.Image.Image ): base file to insert a bg.
+    lower_target ( list | numpy.array ): lower color range to pick.
+    upper_targe ( list | numpy.array ): upper color range to pick.
+    new_bg_surf ( pygame.Surface | PIL.Image.Image ): file to insert.
+Returns:
+     PIL.Image.Image 
+"""
