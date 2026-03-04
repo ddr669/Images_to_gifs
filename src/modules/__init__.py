@@ -1,7 +1,5 @@
-
-from .withpygame import *
 from .array_module import * 
-
+from .config_variables import *
 
 def simple_memeGen(file_image: Image.Image | cv2.Mat,
                    text: str = "Me when",
@@ -23,7 +21,7 @@ def simple_memeGen(file_image: Image.Image | cv2.Mat,
     bg_image.paste(file_image, (0, 0+diff))
     return bg_image
 
-def simple_memeHowGen(file_image: Image.Image | cv2.Mat,
+def simple_memeHowGen(file_image: Image.Image,
                       text: str = "How",
                       bg_color: tuple = (0,0,0),
                       font_color: tuple = (255,255,255),
@@ -64,7 +62,7 @@ def simple_memeHowGen(file_image: Image.Image | cv2.Mat,
 
     return bg_image
 
-def recursion_memeHowAuto(file_image: Image.Image | cv2.Mat,
+def recursion_memeHowAuto(file_image: Image.Image,
                           text: list | str = ['How', '???', 'No way'],
                           new_filename: str = "out/new_file_recursion_meme.gif",
                           frame_count: int = 90,
@@ -89,10 +87,10 @@ def recursion_memeHowAuto(file_image: Image.Image | cv2.Mat,
     frame0.save(new_filename, format="GIF", save_all=True, append_images=frames, duration=frame_count, loop=0)
 
 
-def glitchImageMask(file: Surface | Image.Image,
+def glitchImageMask(file: Image.Image,
                         lower_target: list | tuple | np.ndarray = np.array([0,0,0]),
                         upper_target: list | tuple | np.ndarray = np.array([45,45,45]),
-                        new_bg_surf: Surface | Image.Image = None
+                        new_bg_surf: Image.Image = None
                         )->Image.Image:
     """ Make a image with file image or surface, and a
         new_bg image to create a mask to glitch at all.
