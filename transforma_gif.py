@@ -4,10 +4,7 @@
 #-*-Date:__/__/__-*-
 
 from src import *
-from modules import *
 
-
-print("\n\r\n\r") # just to keep the pygame welcome ^^
 
 class Image_class_module:
 
@@ -17,103 +14,37 @@ class Image_class_module:
         self.matrix, self.image = img_instance(img)
         self.mode     = self.image.mode
 
-    @time_function
-    def transform_into_gray(self, gray_matrix: list | tuple = None):
+    def transform_into_gray(self, gray_matrix: list | tuple = None, *args, **kwargs)->Image.Image:
         gray_multiply = (0.299, 0.587, 0.114, 0.0) if not gray_matrix else gray_matrix
-        if self.mode:
-            color_cc = verify_mode2gray(self.image)
-            self.matrix = cv2.cvtColor(self.matrix, color_cc)
-            
-        else:
-            colors = self.matrix.shape[-1]
-            tmp = 0
-            for _ in range(0, colors):
-                tmp += self.matrix[:,:,_]*gray_multiply[_]
-            self.matrix = np.array(tmp/3, dtype=np.uint8)
+        self.matrix = return_gray(self, gray_matrix=gray_multiply)
         self.mode = "GRAY"
         self.image = return_image_from_array(self.matrix)
-
-    @time_function
+        return self.image
     def transform_in_alpha(self) -> cv2.Mat:
-        new_ = None
-        self.matrix, self.mode = (new_, 'RGBA')
-        self.image  = return_image_from_array(self.matrix)
-        self.is_alpha = True
-            
+        if not self.is_alpha:
+            new_ = return_alpha(self)
+            self.matrix, self.mode = (new_, 'RGBA')
+            self.image  = return_image_from_array(self.matrix)
+            self.is_alpha = True
+        return self.matrix
 
-    @time_function
     def sobel_filter(self, *args, **kwagrs) -> cv2.Mat:
-        if not self.mode:
-            gray_img = cv2.cvtColor(self.matrix, cv2.COLOR_BGR2GRAY)
-        else:
-            gray_img = cv2.cvtColor(self.matrix, cv2.COLOR_RGB2GRAY) if self.mode == 'RGB' else cv2.cvtColor(self.matrix, cv2.COLOR_BGRA2GRAY)
-        laplacian = cv2.Laplacian(gray_img, cv2.CV_64F)
+        laplacian = sobel_filter(self)
         laplacian = np.uint8(np.absolute(laplacian))
+        self.matrix = laplacian
+        self.image  = return_image_from_array(self.matrix)
+
         return laplacian
-    
 
-    @time_function
-    def both_edge_detection(self, weight: int = None):
-        tmp_hor = self.convolution(np.array([[0.25, 0, -0.25], [0.50, 0, -0.50], [0.25, 0, -0.25]]))
-        tmp_ver = self.convolution(np.array([[0.25, 0.5, 0.25],[0,0,0],[-0.25, -0.5, -0.25]]))
-        if not weight:
-            self.matrix = cv2.add(tmp_hor, tmp_ver)
-            self.image = return_image_from_array(self.matrix)
-            return 
-
-        tmp_hor = Image_class_module(tmp_hor)
-        w = weight if isinstance(weight, int) else 1
-        tmp_hor.remove_range_color_alpha([0,0,0], [w,w,w])
-        tmp_ver = Image_class_module(tmp_ver)
-        tmp_ver.remove_range_color_alpha([0,0,0], [w,w,w])
-        self.matrix = cv2.add(tmp_hor.matrix, tmp_ver.matrix)
+    def both_edge_detection(self, weight: int = None, *args, **kwargs)->None:
+        self.matrix = both_edge_detection(self, weight=weight, *args, **kwargs)
         self.image = return_image_from_array(self.matrix)
 
-    @time_function
     def blurr_image(self, strenght: int = 3):
-        x_dir: int = 50
-        y_dir: int = 50
-        blurr = np.zeros((strenght, strenght))
-        c = int(strenght / 2)
-        blurr = cv2.line(blurr, (c+x_dir, c+y_dir), (c,c), (255,), 1)
-#        blurred = self.convolution(blurr)
-        mixed   = cv2.cvtColor(cv2.add(self.matrix, blurr), cv2.COLOR_BGR2RGB)
-        
+        _ = blurr_image(image, strenght=strenght)
+        mixed   = _        
         self.update_matrix(mixed)
-
-   # TODO: ftm fourier transformation method on image before
-   # convolution 
-    @time_function
-    def convolution(self, kernel: np.ndarray) -> np.ndarray:
-        x_size = self.matrix.shape[1]
-        y_size = self.matrix.shape[0]
-        z_a = self.matrix.shape[-1]
-
-        z_a = 1 if z_a == x_size else z_a
-        k_sizeX, k_sizeY = kernel.shape[0], kernel.shape[1]
-
-        _ = np.zeros((y_size -k_sizeY + 3,
-                     x_size -k_sizeX + 3, 3), dtype=np.uint8)
-
-        if self.mode != 'gray' or self.mode == None:
-            for y in range(k_sizeY // 2, y_size - k_sizeY // 2 - 1):
-                for x in range(k_sizeX // 2, x_size - k_sizeX // 2 - 1):
-
-                    try:
-                        values = self.matrix[y-k_sizeY//2:y+k_sizeX//2+1, x-k_sizeX//2:x+k_sizeX//2+1,:]
-                        tmp_0 = (np.dot(values[:,:,0], kernel)).sum().astype(np.uint8)
-                        tmp_1 = (np.dot(values[:,:,1], kernel)).sum().astype(np.uint8)
-                        tmp_2 = (np.dot(values[:,:,2], kernel)).sum().astype(np.uint8)
-                        _[y,x,0] = np.floor(tmp_0 / kernel.size + 2)
-                        _[y,x,1] = np.floor(tmp_1 / kernel.size + 2)
-                        _[y,x,2] = np.floor(tmp_2 / kernel.size + 2)
-                        
-                    except IndexError:
-                        values = self.matrix[y-k_sizeY//2:y+k_sizeX//2+1, x-k_sizeX//2:x+k_sizeX//2+1]
-                        tmp_0 = np.dot(values[:,:], kernel).sum().astype(np.uint8)
-                        _[y, x] = np.floor(tmp_0 / kernel.size + 2)
-        
-        return _[:y_size,:x_size,:]
+        return self.image
        
     def update_image(self,new_image: Image.Image = None) -> None:
         self.image = new_image
@@ -127,9 +58,96 @@ class Image_class_module:
         self.image.save(out)
 
 @time_function
+def return_gray(image: Image_class_module,
+                gray_matrix: list | tuple = None,
+                *args, **kwargs):
+    gray_multiply = (0.299, 0.587, 0.114, 0.0) if not gray_matrix else gray_matrix
+    colors = image.matrix.shape[-1]
+    tmp = 0
+    for _ in range(0, colors):
+        tmp += image.matrix[:,:,_]*gray_multiply[_]
+
+    return np.array(tmp/3, dtype=np.uint8)
+
+        #image.matrix = np.array(tmp/3, dtype=np.uint8)
+    #image.mode = "GRAY"
+    #image.image = return_image_from_array(image.matrix)
+
+@time_function
+def return_alpha(image: Image_class_module, *args, **kwargs) -> cv2.Mat:
+    return cv2.cvtColor(image.matrix, cv2.COLOR_BGR2BGRA)
+    
+
+@time_function
+def sobel_filter(image: Image_class_module, *args, **kwagrs) -> cv2.Mat:
+    gray_img = cv2.cvtColor(image.matrix, cv2.COLOR_BGR2GRAY)
+    laplacian = cv2.Laplacian(gray_img, cv2.CV_64F)
+    laplacian = np.uint8(np.absolute(laplacian))
+    return laplacian
+
+@time_function
+def both_edge_detection(image: Image_class_module, weight: int = None, *args, **kwargs)->cv2.Mat:
+    tmp_hor = convolution(image, np.array([[0.25, 0, -0.25], [0.50, 0, -0.50], [0.25, 0, -0.25]]))
+    tmp_ver = convolution(image, np.array([[0.25, 0.5, 0.25],[0,0,0],[-0.25, -0.5, -0.25]]))
+    if not weight:
+        tmp_mat = cv2.add(tmp_hor, tmp_ver)
+        return tmp_mat
+
+    w = weight if isinstance(weight, int) else 1
+    tha = remove_range_color_alpha(tmp_hor, [0,0,0],[w,w,w])
+    tva = remove_range_color_alpha(tmp_ver, [0,0,0],[w,w,w])
+    tmp_mat = cv2.add(tha, tva)
+    return tmp_mat
+
+@time_function
+def blurr_image(image: Image_class_module, *args, **kwargs)->cv2.Mat:
+    x_dir: int = 50
+    y_dir: int = 50
+    strenght: int = 3
+
+    blurr = np.zeros((strenght, strenght))
+    c = int(strenght / 2)
+    blurr = cv2.line(blurr, (c+x_dir, c+y_dir), (c,c), (255,), 1)
+    blurred = convolution(image,blurr)
+    mixed   = cv2.add(image.matrix, blurred)
+    return mixed
+
+    #ODO: ftm fourier transformation method on image before
+    #convolution 
+@time_function
+def convolution(image: Image_class_module, kernel: np.ndarray, *args, **kwargs) -> np.ndarray:
+    x_size = image.matrix.shape[1]
+    y_size = image.matrix.shape[0]
+    z_a = image.matrix.shape[-1]
+    z_a = 1 if z_a == x_size else z_a
+    k_sizeX, k_sizeY = kernel.shape[0], kernel.shape[1]
+    _ = np.zeros((y_size -k_sizeY + 3,x_size -k_sizeX + 3, 3), dtype=np.uint8)
+
+    if image.mode != 'gray' or image.mode == None:
+        for y in range(k_sizeY // 2, y_size - k_sizeY // 2 - 1):
+            for x in range(k_sizeX // 2, x_size - k_sizeX // 2 - 1):
+                try:
+                    values = image.matrix[y-k_sizeY//2:y+k_sizeX//2+1, x-k_sizeX//2:x+k_sizeX//2+1,:]
+                    tmp_0 = (np.dot(values[:,:,0], kernel)).sum().astype(np.uint8)
+                    tmp_1 = (np.dot(values[:,:,1], kernel)).sum().astype(np.uint8)
+                    tmp_2 = (np.dot(values[:,:,2], kernel)).sum().astype(np.uint8)
+                    _[y,x,0] = np.floor(tmp_0 / kernel.size + 2)
+                    _[y,x,1] = np.floor(tmp_1 / kernel.size + 2)
+                    _[y,x,2] = np.floor(tmp_2 / kernel.size + 2)
+                    
+                except IndexError:
+                    values = image.matrix[y-k_sizeY//2:y+k_sizeX//2+1, x-k_sizeX//2:x+k_sizeX//2+1]
+                    tmp_0 = np.dot(values[:,:], kernel).sum().astype(np.uint8)
+                    _[y, x] = np.floor(tmp_0 / kernel.size + 2)
+    
+    return _[:y_size,:x_size,:]
+       
+
+@time_function
 def blit_text_inrange(image: Image_class_module,
                             lower_target: list = np.array([0,0,0,255]),
                             upper_target: list = np.array([45,45,45,255]),
+                            *args,
                             **kwargs)->Image.Image:
     bg_color = (lower_target[0],lower_target[1],lower_target[2], 255)
     text_img = Image.new('RGBA', image.image.size, bg_color)
@@ -152,9 +170,7 @@ def blit_text_inrange(image: Image_class_module,
             for a in range(0, image.image.size[0], 8):
                 text += " " + str(chr(randint(33, 122))) + " " # chr range for visual character
             text += '\n'
-
     #font = ImageFont.truetype("Tests/fonts/FreeMono.ttf", 24)
-    
 
     draw.text((0,0), text)
     lower_target, upper_target = sanitize_ranges(lower_target, upper_target)
@@ -166,9 +182,10 @@ def blit_text_inrange(image: Image_class_module,
     bg_masked = cv2.bitwise_and(txt,txt,mask=mask)
     
     tmp2 = cv2.add( fg_masked, bg_masked)
-
     image.image = return_image_from_array(cv2.cvtColor(tmp2,cv2.COLOR_BGRA2RGBA))
     image.matrix = tmp2
+    if not 'new_bg' in k_items or kwargs.get('new_bg') == False:
+        remove_range_color_alpha(image)
 
     return image.image
 
@@ -177,8 +194,15 @@ def blit_text_inrange(image: Image_class_module,
 def remove_range_color_alpha(image: Image_class_module,
                             lower_target: list = np.array([0,0,0,255]),
                             upper_target: list = np.array([45,45,45,255]),
+                            *args,
                             **kwargs
                             )->Image.Image:
+    if not isinstance(image, Image_class_module):
+        if isinstance(image, Image):
+            image = Image_class_module(image)
+        elif isinstance(image, np.ndarray):
+            image = Image_class_module(return_image_from_array(image))
+
     if not image.is_alpha: 
         image.transform_in_alpha()
         image.is_alpha = True
@@ -194,10 +218,13 @@ def remove_range_color_alpha(image: Image_class_module,
                 upper_target = upper_target.add(255)
             if len(lower_target) != 4:
                 lower_target = lower_target.add(255)
+
     lower_target, upper_target = sanitize_ranges(lower_target, upper_target)
-    rgb = cv2.cvtColor(image.matrix, cv2.COLOR_BGRA2RGBA)
-    mask = create_mask(rgb, lower_target, upper_target)
-    image.matrix = cv2.bitwise_not(image.matrix,rgb, mask=mask)
+    rgba = image.matrix
+    mask = create_mask(rgba, lower_target, upper_target)
+
+    image.matrix = cv2.bitwise_not(image.matrix,rgba, mask=mask)
+
     image.old_image = image.image
     image.image = return_image_from_array(
         cv2.cvtColor(image.matrix, cv2.COLOR_BGRA2RGBA))
@@ -205,8 +232,7 @@ def remove_range_color_alpha(image: Image_class_module,
     return image.image
 
 @time_function
-def draw_line_image(image, coords: list[tuple], color: tuple = (255,255,255), width: int = 2, **kwargs) -> Image.Image:
-
+def draw_line_image(image, coords: list[tuple], color: tuple = (255,255,255), width: int = 2, *args,**kwargs) -> Image.Image:
         draw_f = ImageDraw.Draw(image.image)
         draw_f.line(coords, fill=color, width=width)
         return image.image
@@ -216,7 +242,7 @@ def make_gif_with_img_func(file,file_name: str = 'out/new_file.gif',
                            over_img = None,
                            coord: list | tuple = [0,0],
                            function_draw = None,
-                           frames_len: int = 10,
+                           frames_len: int = 3,
                            animation_speed: list = [0,1],
                            effect: bool = False,
                            **kwargs):
@@ -250,11 +276,11 @@ def main(file_dict: dict):
 if __name__ == "__main__":
     img = Image_class_module('out/car_reduce.png')
     img.update_image(img.image.resize((800, 420)))
-    blit_text_inrange(img, text="eduardo", loop=1)
+    #blit_text_inrange(img, text="eduardo", loop=1, rm_bg=True)
     new = Image_class_module('out/gato_reduzido.png')
     start = [0, 255]
     end = [800, 255]
-    make_gif_with_img_func(img, function_draw=draw_line_image, coords=[start,end])
+    make_gif_with_img_func(img, function_draw=blurr_image,coords=[start,end],color=(255,0,0))
     #img2 = Image_class_module(img.sobel_filter())
     #img2.save("out/teste2.png")
 
