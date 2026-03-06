@@ -6,7 +6,7 @@
 #from .modules import * 
 #from .cmdline_controll import *
 from .image_class_module import *
-from PIL import Image, PngImagePlugin, JpegImagePlugin, ImageDraw, ImageFont
+from PIL import Image, PngImagePlugin, JpegImagePlugin, ImageDraw, ImageFont, ImageFilter
 import cv2
 import numpy as np
 from sys import argv
