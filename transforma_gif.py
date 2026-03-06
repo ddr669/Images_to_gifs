@@ -8,6 +8,8 @@ Config_Variables.SHOW_BANNER = 1 # use this to *SHOW* the banner and help after 
 Config_Variables.SHOW_BANNER = 0 # use this to avoid banner and help 
 Debug.DEBUG_MODE = 0 # Use this to remove debug mode
 Debug.DEBUG_MODE = 1 # use this to debug the program
+Debug.DEBUG_MODE = 1
+#Config_Variables.SHOW_BANNER = 1
 
 @time_function
 def make_gif_with_img_func(file,file_name: str = 'out/new_file.gif',
@@ -16,13 +18,13 @@ def make_gif_with_img_func(file,file_name: str = 'out/new_file.gif',
                            function_draw = None,
                            frames_len: int = 60,
                            animation_speed: list = [0,1],
-                           effect: bool = False,
+                           effect: bool = False,*args,
                            **kwargs):
     frames = []
     direction = 0
 
     for a in range(0, frames_len):
-        new_file = function_draw(file, **kwargs)
+        new_file = function_draw(file, *args,**kwargs)
         frames.append(new_file)
     try:
         frame0 = frames[0]
@@ -48,10 +50,13 @@ def main(file_dict: dict):
 if __name__ == "__main__":
     img = Image_class_module('out/car_reduce.png')
     img.update_image(img.image.resize((800, 420)))
-    new = Image_class_module('out/gato_reduzido.png')
+    new = Image_class_module('out/alpha_finally.png')
+   # new.update_image(new.image.resize((200, 100)))
+    
     start = [0, 255]
     end = [800, 255]
-    make_gif_with_img_func(img, function_draw=blit_text_inrange)
+    make_gif_with_img_func(img, function_draw=blit_text_inrange,bg_color=(0,0,255),fg_color=(0,255,0), stroke_width=1)
+   
     img.image.save('out/teste01.png')
     print('done')
     file = None
